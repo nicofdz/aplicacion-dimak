@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\ConductorController;
 // Página de inicio
 Route::get('/', function () {
     return view('welcome');
@@ -22,3 +22,10 @@ Route::middleware('auth')->group(function () {
 
 // Incluir rutas de autenticación
 require __DIR__ . '/auth.php';
+
+
+//ruta para ver todos los conductores
+Route::get('/conductores', [ConductorController::class, 'index'])->name('conductores.index');
+//ruta para entrar el formulario de conductores
+Route::get('/conductores/nuevo', [ConductorController::class, 'create'])->name('conductores.create');
+
