@@ -28,4 +28,12 @@ require __DIR__ . '/auth.php';
 Route::get('/conductores', [ConductorController::class, 'index'])->name('conductores.index');
 //ruta para entrar el formulario de conductores
 Route::get('/conductores/nuevo', [ConductorController::class, 'create'])->name('conductores.create');
+//envia la informacion
+Route::post('/conductores', [ConductorController::class, 'store'])->name('conductores.store');
+//ruta para ver formulario de edicion
+Route::get('/conductores/{conductor}/edit', [ConductorController::class, 'edit'])->name('conductores.edit');
+//ruta para guardar cambios
+Route::put('/conductores/{conductor}', [ConductorController::class, 'update'])->name('conductores.update');
+//ruta para eliminar conductor 
+Route::delete('/conductores/{conductor}', [ConductorController::class, 'destroy'])->name('conductores.destroy');
 

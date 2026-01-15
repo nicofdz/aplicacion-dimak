@@ -20,4 +20,63 @@ class ConductorController extends Controller
     {
         return view('conductores.create');
     }
+
+    public function store(Request $request)
+    {
+        // validar datos
+        $request->validate([
+            'nombre'         => 'required|string|max:255',
+            'cargo'          => 'required|string|max:255',
+            'departamento'   => 'required|string|max:255',
+            'fecha_licencia' => 'required|date',
+            'fotografia'     => 'nullable|image|mimes:jpg,png,jpeg|max:2048', // Máximo 2MB
+        ]);
+        $conductor = new Conductor($request->except('fotografia'));
+
+        // guarda foto en caso de ser subida
+        if ($request->hasFile('fotografia')) {
+            $rutaFoto = $request->file('fotografia')->store('conductores', 'public');
+            $conductor->fotografia = $rutaFoto;
+        }
+        
+        // guardar datos 
+        $conductor->save();
+        return redirect()->route('conductores.index')->with('success', 'Conductor creado correctamente.');
+    }
+
+        // Muestra el formulario con los datos cargados
+    public function edit(Conductor $conductor)
+    {
+        return view('conductores.edit', compact('conductor'));
+    }
+
+    // Guarda los cambios 
+    public function update(Request $request, Conductor $conductor)
+    {
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'cargo' => 'required|string|max:255',
+            'departamento' => 'required|string|max:255',
+            'fecha_licencia' => 'required|date',
+        ]);
+
+        $data = $request->all();
+
+        if ($request->hasFile('fotografia')) {
+            $data['fotografia'] = $request->file('fotografia')->store('conductores', 'public');
+        }
+
+        $conductor->update($data);
+        return redirect()->route('conductores.index')->with('success', 'Conductor actualizado.');
+    }
+
+    // Elimina al conductor
+    public function destroy(Conductor $conductor)
+    {
+        $conductor->delete();
+        return redirect()->route('conductores.index')->with('success', 'Conductor eliminado.');
+    }
+
+    
+
 }

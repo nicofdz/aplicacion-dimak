@@ -59,7 +59,15 @@
                                 </td>
 
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 transition-colors">Editar</button>
+                                    <div class="flex justify-end items-center gap-4">
+                                        <a href="{{ route('conductores.edit', $conductor) }}" class="text-indigo-400 hover:text-indigo-600 transition-colors font-bold text-xs uppercase tracking-widest">Editar</a>
+                                        
+                                        <form action="{{ route('conductores.destroy', $conductor) }}" method="POST" onsubmit="return confirm('¿Está seguro de eliminar a este conductor?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-400 hover:text-red-600 transition-colors font-bold text-xs uppercase tracking-widest">Eliminar</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
