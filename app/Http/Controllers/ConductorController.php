@@ -77,6 +77,27 @@ class ConductorController extends Controller
         return redirect()->route('conductores.index')->with('success', 'Conductor eliminado.');
     }
 
+    public function trash()
+    {
+        $conductoresEliminados = Conductor::onlyTrashed()->get(); // Trae solo los borrados
+        return view('conductores.trash', compact('conductoresEliminados'));
+    }
+
+    public function restore($id)
+    {
+        
+        $conductor = Conductor::withTrashed()->findOrFail($id);
+        $conductor->restore();
+
+        return redirect()->route('conductores.index')->with('success', 'Conductor restaurado correctamente.');
+    }
+    public function forceDelete($id)
+    {
+        $conductor = Conductor::withTrashed()->findOrFail($id);
+        $conductor->forceDelete(); // Borrado físico de la base de datos
+
+        return redirect()->route('conductores.trash')->with('success', 'Conductor eliminado permanentemente.');
+    }
     
 
 }

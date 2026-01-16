@@ -29,6 +29,9 @@ Route::middleware('auth')->group(function () {
     Route::post('vehicles/{vehicle}/maintenance/state', [\App\Http\Controllers\MaintenanceController::class, 'updateState'])->name('vehicles.maintenance.state');
     Route::post('vehicles/{vehicle}/maintenance/request', [\App\Http\Controllers\MaintenanceController::class, 'storeRequest'])->name('vehicles.maintenance.request');
     Route::post('maintenance/requests/{id}/accept', [\App\Http\Controllers\MaintenanceController::class, 'acceptRequest'])->name('maintenance.requests.accept');
+
+    Route::get('/conductores/trash', [ConductorController::class, 'trash'])->name('conductores.trash');
+    Route::post('/conductores/{id}/restore', [ConductorController::class, 'restore'])->name('conductores.restore');
 });
 
 // Incluir rutas de autenticación
@@ -47,4 +50,6 @@ Route::get('/conductores/{conductor}/edit', [ConductorController::class, 'edit']
 Route::put('/conductores/{conductor}', [ConductorController::class, 'update'])->name('conductores.update');
 //ruta para eliminar conductor 
 Route::delete('/conductores/{conductor}', [ConductorController::class, 'destroy'])->name('conductores.destroy');
+//eliminar de papelera
+Route::delete('/conductores/{id}/force-delete', [ConductorController::class, 'forceDelete'])->name('conductores.force-delete');
 
