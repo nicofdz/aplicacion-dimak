@@ -57,6 +57,14 @@ Route::middleware('auth')->group(function () {
     Route::post('vehiculos/{vehicle}/maintenance/complete', [\App\Http\Controllers\MaintenanceController::class, 'complete'])->name('vehicles.maintenance.complete');
     Route::post('maintenance/requests/{id}/accept', [\App\Http\Controllers\MaintenanceController::class, 'acceptRequest'])->name('maintenance.requests.accept');
 
+    // Rutas de Solicitudes de Vehículos (Reservas)
+    Route::get('/solicitar-vehiculo', [\App\Http\Controllers\VehicleRequestController::class, 'create'])->name('requests.create');
+    Route::post('/solicitar-vehiculo', [\App\Http\Controllers\VehicleRequestController::class, 'store'])->name('requests.store');
+    Route::post('/requests/{id}/approve', [\App\Http\Controllers\VehicleRequestController::class, 'approve'])->name('requests.approve');
+    Route::post('/requests/{id}/reject', [\App\Http\Controllers\VehicleRequestController::class, 'reject'])->name('requests.reject');
+    Route::get('/mis-reservas', [\App\Http\Controllers\VehicleRequestController::class, 'index'])->name('requests.index');
+    Route::post('/requests/{id}/complete', [\App\Http\Controllers\VehicleRequestController::class, 'complete'])->name('requests.complete');
+
 
 });
 

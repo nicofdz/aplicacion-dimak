@@ -47,7 +47,7 @@
     </x-slot>
 
     <div class="py-12"
-        x-data="{ openModal: {{ $errors->any() ? 'true' : 'false' }}, deleteAction: '', editingVehicle: {}, editAction: '', viewingVehicle: {}, maintenanceVehicle: {} }">
+        x-data="{ openModal: {{ $errors->any() ? 'true' : 'false' }}, deleteAction: '', editingVehicle: {}, editAction: '', viewingVehicle: {}, maintenanceVehicle: {}, viewingUser: null }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
 
@@ -55,6 +55,8 @@
             <div
                 class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-gray-200 dark:border-gray-700">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
+
+
 
                     <div class="overflow-x-auto">
                         <table class="min-w-full leading-normal">
@@ -111,21 +113,28 @@
                                         </td>
                                         <td class="px-5 py-4 text-sm">
                                             @php
+                                                $displayStatus = $vehicle->display_status;
                                                 $statusClasses = [
                                                     'available' => 'text-green-400 bg-green-900/30 border border-green-900',
                                                     'workshop' => 'text-red-400 bg-red-900/30 border border-red-900',
                                                     'maintenance' => 'text-yellow-400 bg-yellow-900/30 border border-yellow-900',
+                                                    'occupied' => 'text-blue-400 bg-blue-900/30 border border-blue-900',
                                                 ];
                                                 $statusLabel = [
                                                     'available' => 'DISPONIBLE',
                                                     'workshop' => 'EN TALLER',
                                                     'maintenance' => 'MANTENIMIENTO',
+                                                    'occupied' => 'RESERVADO',
                                                 ];
                                             @endphp
-                                            <span
-                                                class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md {{ $statusClasses[$vehicle->status] ?? 'text-gray-400 bg-gray-800' }}">
-                                                {{ $statusLabel[$vehicle->status] ?? strtoupper($vehicle->status) }}
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md {{ $statusClasses[$displayStatus] ?? 'text-gray-400 bg-gray-800' }}">
+                                                {{ $statusLabel[$displayStatus] ?? strtoupper($displayStatus) }}
                                             </span>
+                                            @if($displayStatus === 'occupied' && $vehicle->active_reservation)
+                                                <div class="text-[10px] text-blue-300 mt-1">
+                                                    Por: {{ $vehicle->active_reservation->user->name }}
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="px-5 py-4 text-sm">
                                             <div class="flex items-center">
@@ -700,8 +709,80 @@
                     {{ __('Solicitudes Pendientes') }}
                 </h2>
 
+                <!-- Sección de Reservas de Vehículos -->
+                <div class="mb-8">
+                    <h3 class="text-md font-bold text-indigo-400 mb-3 uppercase tracking-wider">Reservas de Vehículos</h3>
+                    @if(isset($pendingReservations) && $pendingReservations->count() > 0)
+                        <div class="overflow-x-auto bg-gray-900 rounded-lg shadow mb-4">
+                            <table class="min-w-full divide-y divide-gray-700">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Foto</th>
+                                        <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Usuario</th>
+                                        <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Vehículo</th>
+                                        <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Desde</th>
+                                        <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Hasta</th>
+                                        <th class="px-4 py-3 bg-gray-900 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-gray-800 divide-y divide-gray-700">
+                                    @foreach($pendingReservations as $reservation)
+                                        <tr>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-100">
+                                                <button @click="viewingUser = { 
+                                                    name: '{{ $reservation->user->name }}', 
+                                                    email: '{{ $reservation->user->email }}', 
+                                                    photo: '{{ $reservation->user->profile_photo_path ? asset('storage/' . $reservation->user->profile_photo_path) : null }}',
+                                                    initial: '{{ substr($reservation->user->name, 0, 1) }}'
+                                                }; $dispatch('open-modal', 'user-details-modal')" 
+                                                class="focus:outline-none transform hover:scale-110 transition-transform duration-200">
+                                                    @if ($reservation->user->profile_photo_path)
+                                                        <img class="h-12 w-12 rounded-full object-cover border-2 border-transparent hover:border-indigo-500" src="{{ asset('storage/' . $reservation->user->profile_photo_path) }}" alt="{{ $reservation->user->name }}" />
+                                                    @else
+                                                        <div class="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-800 font-bold ml-1 text-lg border-2 border-transparent hover:border-indigo-500">
+                                                            {{ substr($reservation->user->name, 0, 1) }}
+                                                        </div>
+                                                    @endif
+                                                </button>
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-100">
+                                                {{ $reservation->user->name }}
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                                {{ $reservation->vehicle->brand }} {{ $reservation->vehicle->model }}
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                                {{ $reservation->start_date->format('d/m H:i') }}
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                                {{ $reservation->end_date->format('d/m H:i') }}
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                                <div class="flex justify-end space-x-2">
+                                                    <form action="{{ route('requests.approve', $reservation->id) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" class="text-green-500 hover:text-green-400 font-bold">Aprobar</button>
+                                                    </form>
+                                                    <form action="{{ route('requests.reject', $reservation->id) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" class="text-red-500 hover:text-red-400 font-bold">Rechazar</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <p class="text-gray-500 italic mb-4">No hay reservas pendientes.</p>
+                    @endif
+                </div>
+
+                <div class="border-t border-gray-700 pt-4">
+                    <h3 class="text-md font-bold text-yellow-500 mb-3 uppercase tracking-wider">Mantenimiento</h3>
                 @if($pendingRequests->isEmpty())
-                    <p class="text-gray-400 text-center py-8">No hay solicitudes pendientes.</p>
+                    <p class="text-gray-400 text-center py-8">No hay solicitudes de mantenimiento.</p>
                 @else
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-700">
@@ -748,6 +829,33 @@
 
                 <div class="mt-6 flex justify-end">
                     <x-secondary-button @click="$dispatch('close')" class="bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600">
+                        {{ __('Cerrar') }}
+                    </x-secondary-button>
+                </div>
+            </div>
+        </x-modal>
+
+        <!-- Modal Detalles del Usuario -->
+        <x-modal name="user-details-modal" :show="false" focusable>
+            <div class="p-6 bg-gray-800 text-gray-100 text-center">
+                <h2 class="text-xl font-bold text-gray-100 mb-6">Detalles del Solicitante</h2>
+                
+                <div class="flex flex-col items-center justify-center mb-6">
+                    <template x-if="viewingUser && viewingUser.photo">
+                        <img :src="viewingUser.photo" alt="Profile" class="h-32 w-32 rounded-full object-cover border-4 border-indigo-500 shadow-lg mb-4">
+                    </template>
+                    <template x-if="viewingUser && !viewingUser.photo">
+                         <div class="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center text-gray-800 font-bold text-4xl border-4 border-indigo-500 shadow-lg mb-4">
+                            <span x-text="viewingUser.initial"></span>
+                        </div>
+                    </template>
+                    
+                    <h3 class="text-2xl font-bold text-white mb-1" x-text="viewingUser ? viewingUser.name : ''"></h3>
+                    <p class="text-gray-400" x-text="viewingUser ? viewingUser.email : ''"></p>
+                </div>
+
+                <div class="mt-6 flex justify-center">
+                    <x-secondary-button @click="$dispatch('close')" class="bg-indigo-600 text-white hover:bg-indigo-500 border-transparent px-8 py-2">
                         {{ __('Cerrar') }}
                     </x-secondary-button>
                 </div>

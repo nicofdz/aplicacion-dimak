@@ -18,7 +18,12 @@ class VehicleController extends Controller
             ->latest()
             ->get();
 
-        return view('vehicles.index', compact('vehicles', 'pendingRequests'));
+        $pendingReservations = \App\Models\VehicleRequest::with(['vehicle', 'user'])
+            ->where('status', 'pending')
+            ->latest()
+            ->get();
+
+        return view('vehicles.index', compact('vehicles', 'pendingRequests', 'pendingReservations'));
     }
 
     /**
