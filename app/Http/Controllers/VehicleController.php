@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class VehicleController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Muestra un listado del recurso.
      */
     public function index()
     {
@@ -22,7 +22,7 @@ class VehicleController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Muestra el formulario para crear un nuevo recurso.
      */
     public function create()
     {
@@ -30,7 +30,7 @@ class VehicleController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Almacena un recurso recién creado en el almacenamiento.
      */
     public function store(Request $request)
     {
@@ -40,7 +40,7 @@ class VehicleController extends Controller
             'model' => 'required|max:255',
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'mileage' => 'required|integer|min:0',
-            'image' => 'nullable|image|max:2048', // 2MB Max
+            'image' => 'nullable|image|max:2048', // Máx 2MB
         ]);
 
         $data = $request->except('image');
@@ -56,7 +56,7 @@ class VehicleController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Muestra el recurso especificado.
      */
     public function show(string $id)
     {
@@ -64,7 +64,7 @@ class VehicleController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Muestra el formulario para editar el recurso especificado.
      */
     public function edit(string $id)
     {
@@ -72,7 +72,7 @@ class VehicleController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Actualiza el recurso especificado en el almacenamiento.
      */
     public function update(Request $request, \App\Models\Vehicle $vehicle)
     {
@@ -88,7 +88,7 @@ class VehicleController extends Controller
         $data = $request->except('image');
 
         if ($request->hasFile('image')) {
-            // Delete old image if exists
+            // Eliminar imagen antigua si existe
             if ($vehicle->image_path) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($vehicle->image_path);
             }
@@ -102,7 +102,7 @@ class VehicleController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Elimina el recurso especificado del almacenamiento.
      */
     public function destroy(\App\Models\Vehicle $vehicle)
     {

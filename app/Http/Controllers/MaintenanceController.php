@@ -9,7 +9,7 @@ class MaintenanceController extends Controller
 {
     public function updateState(Request $request, Vehicle $vehicle)
     {
-        // Sanitize inputs (remove dots from thousand separators)
+        // Sanear entradas (eliminar puntos de los separadores de miles)
         $request->merge([
             'last_oil_change_km' => $request->last_oil_change_km ? str_replace('.', '', $request->last_oil_change_km) : null,
             'next_oil_change_km' => $request->next_oil_change_km ? str_replace('.', '', $request->next_oil_change_km) : null,
@@ -51,10 +51,10 @@ class MaintenanceController extends Controller
     {
         $maintenanceRequest = \App\Models\MaintenanceRequest::findOrFail($id);
 
-        // Update request status
+        // Actualizar estado de la solicitud
         $maintenanceRequest->update(['status' => 'in_progress']);
 
-        // Update vehicle status
+        // Actualizar estado del vehículo
         $maintenanceRequest->vehicle->update(['status' => 'maintenance']);
 
         return back()->with('success', 'Solicitud aceptada. El vehículo ha pasado a mantenimiento.');
@@ -62,12 +62,12 @@ class MaintenanceController extends Controller
 
     public function complete(Request $request, Vehicle $vehicle)
     {
-        // Find any in_progress requests for this vehicle and mark as completed
+        // Buscar cualquier solicitud en progreso para este vehículo y marcarla como completada
         $vehicle->maintenanceRequests()
             ->where('status', 'in_progress')
             ->update(['status' => 'completed']);
 
-        // Set vehicle status back to available
+        // Establecer el estado del vehículo nuevamente a disponible
         $vehicle->update(['status' => 'available']);
 
         return back()->with('success', 'Mantenimiento finalizado. Vehículo disponible nuevamente.');

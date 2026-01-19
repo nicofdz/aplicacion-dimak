@@ -12,7 +12,7 @@ use Illuminate\View\View;
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Muestra el formulario de perfil del usuario.
      */
     public function edit(Request $request): View
     {
@@ -22,7 +22,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile information.
+     * Actualiza la información de perfil del usuario.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
@@ -33,7 +33,7 @@ class ProfileController extends Controller
         }
 
         if ($request->hasFile('photo')) {
-            // Delete old photo if exists
+            // Eliminar foto antigua si existe
             if ($request->user()->profile_photo_path) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($request->user()->profile_photo_path);
             }
@@ -48,7 +48,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Elimina la cuenta del usuario.
      */
     public function destroy(Request $request): RedirectResponse
     {

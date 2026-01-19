@@ -25,7 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::put('papelera/vehiculos/{id}/restore', [\App\Http\Controllers\VehicleController::class, 'restore'])->name('vehicles.restore');
     Route::delete('papelera/vehiculos/{id}/force-delete', [\App\Http\Controllers\VehicleController::class, 'forceDelete'])->name('vehicles.force-delete');
 
-    // Resource with custom names to preserve existing helper calls
+    // Recurso con nombres personalizados para mantener compatibilidad
     Route::resource('vehiculos', \App\Http\Controllers\VehicleController::class)
         ->names([
             'index' => 'vehicles.index',
@@ -57,7 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::post('vehiculos/{vehicle}/maintenance/complete', [\App\Http\Controllers\MaintenanceController::class, 'complete'])->name('vehicles.maintenance.complete');
     Route::post('maintenance/requests/{id}/accept', [\App\Http\Controllers\MaintenanceController::class, 'acceptRequest'])->name('maintenance.requests.accept');
 
-    
+
 });
 
 // Incluir rutas de autenticación

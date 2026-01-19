@@ -24,7 +24,7 @@ class Vehicle extends Model
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Obtiene los atributos que deben ser convertidos.
      *
      * @return array<string, string>
      */
