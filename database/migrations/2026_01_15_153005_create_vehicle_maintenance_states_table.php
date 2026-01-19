@@ -11,6 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('vehicle_maintenance_states', function (Blueprint $table) {
+            $table->id();
             $table->foreignId('vehicle_id')->constrained()->onDelete('cascade');
             $table->integer('last_oil_change_km')->nullable();
             $table->integer('next_oil_change_km')->nullable();

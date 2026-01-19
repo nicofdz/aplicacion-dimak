@@ -59,4 +59,17 @@ class MaintenanceController extends Controller
 
         return back()->with('success', 'Solicitud aceptada. El vehículo ha pasado a mantenimiento.');
     }
+
+    public function complete(Request $request, Vehicle $vehicle)
+    {
+        // Find any in_progress requests for this vehicle and mark as completed
+        $vehicle->maintenanceRequests()
+            ->where('status', 'in_progress')
+            ->update(['status' => 'completed']);
+
+        // Set vehicle status back to available
+        $vehicle->update(['status' => 'available']);
+
+        return back()->with('success', 'Mantenimiento finalizado. Vehículo disponible nuevamente.');
+    }
 }

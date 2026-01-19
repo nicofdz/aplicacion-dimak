@@ -1,0 +1,68 @@
+<aside x-data="{ open: true }" :class="open ? 'w-64' : 'w-20'"
+    class="flex-shrink-0 min-h-screen bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out flex flex-col pt-0">
+
+    <!-- Toggle Button & Logo Area -->
+    <div class="h-16 flex items-center justify-between px-4 bg-gray-900 border-b border-gray-800">
+        <div class="flex items-center space-x-2" :class="{'justify-center w-full': !open}">
+            <!-- Logo (Optional) -->
+            <!-- Logo -->
+            <a href="{{ route('dashboard') }}" class="flex items-center justify-center overflow-hidden">
+                <img src="{{ asset('images/dimak-logo.png') }}" alt="Dimak Logo"
+                    class="object-contain transition-all duration-300" :class="open ? 'h-10' : 'h-8'" />
+            </a>
+        </div>
+        <button @click="open = !open" x-show="open" class="text-gray-400 hover:text-white focus:outline-none">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Re-open button when closed -->
+    <div x-show="!open" class="flex justify-center py-4 border-b border-gray-800">
+        <button @click="open = !open" class="text-gray-400 hover:text-white focus:outline-none">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="flex-1 px-2 py-4 space-y-2 overflow-y-auto">
+        <!-- Dashboard -->
+        <a href="{{ route('dashboard') }}"
+            class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"
+            :class="{'justify-center': !open, 'bg-gray-800 text-white': request()->routeIs('dashboard')}">
+            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Dashboard</span>
+        </a>
+
+        <!-- Vehículos -->
+        <a href="{{ route('vehicles.index') }}"
+            class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"
+            :class="{'justify-center': !open, 'bg-gray-800 text-white': request()->routeIs('vehicles.*')}">
+            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 012-2h5a2 2 0 012 2m0 0h2a2 2 0 012 2v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3a2 2 0 012-2z" />
+            </svg>
+            <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Vehículos</span>
+        </a>
+
+        <!-- Conductores -->
+        <a href="{{ route('conductores.index') }}"
+            class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"
+            :class="{'justify-center': !open, 'bg-gray-800 text-white': request()->routeIs('conductores.*')}">
+            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Conductores</span>
+        </a>
+    </nav>
+</aside>

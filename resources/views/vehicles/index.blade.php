@@ -145,8 +145,10 @@
                                                 <button @click="
                                                                 maintenanceVehicle = {
                                                                     id: {{ $vehicle->id }},
+                                                                    status: '{{ $vehicle->status }}',
                                                                     updateStateAction: '{{ route('vehicles.maintenance.state', $vehicle) }}',
                                                                     storeRequestAction: '{{ route('vehicles.maintenance.request', $vehicle) }}',
+                                                                    completeAction: '{{ route('vehicles.maintenance.complete', $vehicle) }}',
                                                                     last_oil_change_km: '{{ isset($vehicle->currentMaintenanceState->last_oil_change_km) ? number_format($vehicle->currentMaintenanceState->last_oil_change_km, 0, '', '.') : '' }}',
                                                                     next_oil_change_km: '{{ isset($vehicle->currentMaintenanceState->next_oil_change_km) ? number_format($vehicle->currentMaintenanceState->next_oil_change_km, 0, '', '.') : '' }}',
                                                                     tire_status_front: '{{ $vehicle->currentMaintenanceState->tire_status_front ?? 'good' }}',
@@ -550,7 +552,7 @@
 
                 <!-- Tab: Estado Técnico -->
                 <div x-show="tab === 'status'">
-                    <form method="POST" :action="maintenanceVehicle.updateStateAction">
+                    <form id="update-maintenance-state-form" method="POST" :action="maintenanceVehicle.updateStateAction">
                         @csrf
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -629,17 +631,25 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="mt-8 flex justify-end space-x-3">
-                            <x-secondary-button @click="$dispatch('close')"
-                                class="bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600">
-                                {{ __('Cancelar') }}
-                            </x-secondary-button>
-                            <x-primary-button class="bg-blue-600 hover:bg-blue-700 border-transparent">
-                                {{ __('Actualizar Estado') }}
-                            </x-primary-button>
-                        </div>
                     </form>
+
+                    <div class="mt-8 flex justify-end space-x-3">
+                        <form x-show="maintenanceVehicle.status === 'maintenance' || maintenanceVehicle.status === 'workshop'" 
+                            method="POST" :action="maintenanceVehicle.completeAction" class="mr-auto">
+                            @csrf
+                            <x-primary-button class="bg-green-600 hover:bg-green-700 border-transparent">
+                                ✅ {{ __('Finalizar Mantenimiento') }}
+                            </x-primary-button>
+                        </form>
+
+                        <x-secondary-button @click="$dispatch('close')"
+                            class="bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600">
+                            {{ __('Cancelar') }}
+                        </x-secondary-button>
+                        <x-primary-button form="update-maintenance-state-form" class="bg-blue-600 hover:bg-blue-700 border-transparent">
+                            {{ __('Actualizar Estado') }}
+                        </x-primary-button>
+                    </div>
                 </div>
 
                 <!-- Tab: Solicitar Mantención -->

@@ -20,14 +20,28 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Rutas de Vehículos
-    Route::get('trash/vehicles', [\App\Http\Controllers\VehicleController::class, 'trash'])->name('vehicles.trash');
-    Route::put('trash/vehicles/{id}/restore', [\App\Http\Controllers\VehicleController::class, 'restore'])->name('vehicles.restore');
-    Route::delete('trash/vehicles/{id}/force-delete', [\App\Http\Controllers\VehicleController::class, 'forceDelete'])->name('vehicles.force-delete');
-    Route::resource('vehicles', \App\Http\Controllers\VehicleController::class)->except(['show']);
+    // Rutas de Vehículos
+    Route::get('papelera/vehiculos', [\App\Http\Controllers\VehicleController::class, 'trash'])->name('vehicles.trash');
+    Route::put('papelera/vehiculos/{id}/restore', [\App\Http\Controllers\VehicleController::class, 'restore'])->name('vehicles.restore');
+    Route::delete('papelera/vehiculos/{id}/force-delete', [\App\Http\Controllers\VehicleController::class, 'forceDelete'])->name('vehicles.force-delete');
+
+    // Resource with custom names to preserve existing helper calls
+    Route::resource('vehiculos', \App\Http\Controllers\VehicleController::class)
+        ->names([
+            'index' => 'vehicles.index',
+            'create' => 'vehicles.create',
+            'store' => 'vehicles.store',
+            'show' => 'vehicles.show',
+            'edit' => 'vehicles.edit',
+            'update' => 'vehicles.update',
+            'destroy' => 'vehicles.destroy',
+        ])
+        ->except(['show']);
 
     // Rutas de Mantenimiento
-    Route::post('vehicles/{vehicle}/maintenance/state', [\App\Http\Controllers\MaintenanceController::class, 'updateState'])->name('vehicles.maintenance.state');
-    Route::post('vehicles/{vehicle}/maintenance/request', [\App\Http\Controllers\MaintenanceController::class, 'storeRequest'])->name('vehicles.maintenance.request');
+    Route::post('vehiculos/{vehicle}/maintenance/state', [\App\Http\Controllers\MaintenanceController::class, 'updateState'])->name('vehicles.maintenance.state');
+    Route::post('vehiculos/{vehicle}/maintenance/request', [\App\Http\Controllers\MaintenanceController::class, 'storeRequest'])->name('vehicles.maintenance.request');
+    Route::post('vehiculos/{vehicle}/maintenance/complete', [\App\Http\Controllers\MaintenanceController::class, 'complete'])->name('vehicles.maintenance.complete');
     Route::post('maintenance/requests/{id}/accept', [\App\Http\Controllers\MaintenanceController::class, 'acceptRequest'])->name('maintenance.requests.accept');
 });
 
