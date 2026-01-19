@@ -13,11 +13,12 @@ return new class extends Migration
 {
     Schema::create('conductores', function (Blueprint $table) {
         $table->id();
-        $table->string('nombre'); // Nombre [cite: 24]
-        $table->string('cargo'); // Cargo [cite: 24]
-        $table->string('departamento'); // Departamento [cite: 24]
-        $table->string('fotografia')->nullable(); // Fotografía [cite: 24]
-        $table->date('fecha_licencia'); // Validación de Licencia [cite: 25]
+        $table->string('nombre'); 
+        $table->string('cargo'); 
+        $table->string('departamento'); 
+        $table->string('fotografia')->nullable(); 
+        $table->date('fecha_licencia'); 
+        $table->softDeletes();
         $table->timestamps();
     });
 }
