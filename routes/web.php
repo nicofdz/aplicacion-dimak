@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
             'update' => 'vehicles.update',
             'destroy' => 'vehicles.destroy',
         ])
+        ->parameters(['vehiculos' => 'vehicle'])
         ->except(['show']);
 
     // Rutas de Mantenimiento

@@ -13,9 +13,51 @@
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
+    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6" enctype="multipart/form-data">
         @csrf
         @method('patch')
+
+        <!-- Profile Photo -->
+        <div>
+            <x-input-label for="photo" :value="__('Foto de Perfil')" />
+            <div x-data="{ photoName: null, photoPreview: null }" class="col-span-6 sm:col-span-4">
+                <!-- Current Profile Photo -->
+                <div class="mt-2" x-show="! photoPreview">
+                    @if ($user->profile_photo_path)
+                        <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="{{ $user->name }}"
+                            class="rounded-full h-20 w-20 object-cover">
+                    @else
+                        <div
+                            class="rounded-full h-20 w-20 bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xl">
+                            {{ substr($user->name, 0, 1) }}
+                        </div>
+                    @endif
+                </div>
+
+                <!-- New Profile Photo Preview -->
+                <div class="mt-2" x-show="photoPreview" style="display: none;">
+                    <span class="block rounded-full w-20 h-20 bg-cover bg-no-repeat bg-center"
+                        x-bind:style="'background-image: url(\'' + photoPreview + '\');'">
+                    </span>
+                </div>
+
+                <x-secondary-button class="mt-2" type="button" x-on:click.prevent="$refs.photo.click()">
+                    {{ __('Seleccionar Nueva Foto') }}
+                </x-secondary-button>
+
+                <input type="file" id="photo" class="hidden" wire:model.live="photo" x-ref="photo" name="photo"
+                    x-on:change="
+                                    photoName = $refs.photo.files[0].name;
+                                    const reader = new FileReader();
+                                    reader.onload = (e) => {
+                                        photoPreview = e.target.result;
+                                    };
+                                    reader.readAsDataURL($refs.photo.files[0]);
+                            " />
+
+                <x-input-error class="mt-2" :messages="$errors->get('photo')" />
+            </div>
+        </div>
 
         <div>
             <x-input-label for="name" :value="__('Nombre')" />
