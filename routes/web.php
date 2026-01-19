@@ -39,32 +39,30 @@ Route::middleware('auth')->group(function () {
         ->parameters(['vehiculos' => 'vehicle'])
         ->except(['show']);
 
+    //Rutas de conductores
+    Route::get('/conductores/trash', [ConductorController::class, 'trash'])->name('conductores.trash');
+    Route::post('/conductores/{id}/restore', [ConductorController::class, 'restore'])->name('conductores.restore');
+    Route::delete('/conductores/{id}/force-delete', [ConductorController::class, 'forceDelete'])->name('conductores.force-delete');
+
+    Route::get('/conductores', [ConductorController::class, 'index'])->name('conductores.index');
+    Route::get('/conductores/nuevo', [ConductorController::class, 'create'])->name('conductores.create');
+    Route::post('/conductores', [ConductorController::class, 'store'])->name('conductores.store');
+    Route::get('/conductores/{conductor}/edit', [ConductorController::class, 'edit'])->name('conductores.edit');
+    Route::put('/conductores/{conductor}', [ConductorController::class, 'update'])->name('conductores.update');
+    Route::delete('/conductores/{conductor}', [ConductorController::class, 'destroy'])->name('conductores.destroy');
+
     // Rutas de Mantenimiento
     Route::post('vehiculos/{vehicle}/maintenance/state', [\App\Http\Controllers\MaintenanceController::class, 'updateState'])->name('vehicles.maintenance.state');
     Route::post('vehiculos/{vehicle}/maintenance/request', [\App\Http\Controllers\MaintenanceController::class, 'storeRequest'])->name('vehicles.maintenance.request');
     Route::post('vehiculos/{vehicle}/maintenance/complete', [\App\Http\Controllers\MaintenanceController::class, 'complete'])->name('vehicles.maintenance.complete');
     Route::post('maintenance/requests/{id}/accept', [\App\Http\Controllers\MaintenanceController::class, 'acceptRequest'])->name('maintenance.requests.accept');
 
-    Route::get('/conductores/trash', [ConductorController::class, 'trash'])->name('conductores.trash');
-    Route::post('/conductores/{id}/restore', [ConductorController::class, 'restore'])->name('conductores.restore');
+    
 });
 
 // Incluir rutas de autenticación
 require __DIR__ . '/auth.php';
 
 
-//ruta para ver todos los conductores
-Route::get('/conductores', [ConductorController::class, 'index'])->name('conductores.index');
-//ruta para entrar el formulario de conductores
-Route::get('/conductores/nuevo', [ConductorController::class, 'create'])->name('conductores.create');
-//envia la informacion
-Route::post('/conductores', [ConductorController::class, 'store'])->name('conductores.store');
-//ruta para ver formulario de edicion
-Route::get('/conductores/{conductor}/edit', [ConductorController::class, 'edit'])->name('conductores.edit');
-//ruta para guardar cambios
-Route::put('/conductores/{conductor}', [ConductorController::class, 'update'])->name('conductores.update');
-//ruta para eliminar conductor 
-Route::delete('/conductores/{conductor}', [ConductorController::class, 'destroy'])->name('conductores.destroy');
-//eliminar de papelera
-Route::delete('/conductores/{id}/force-delete', [ConductorController::class, 'forceDelete'])->name('conductores.force-delete');
+
 
