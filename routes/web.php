@@ -16,7 +16,7 @@ Route::get('/', function () {
 
 // Dashboard 
 Route::get('/dashboard', [VehicleController::class, 'index'])
-    ->middleware(['auth', 'verified', 'force.password.change'])
+    ->middleware(['auth',  'force.password.change'])
     ->name('dashboard');
 
 // Grupo de rutas para el perfil de usuario
