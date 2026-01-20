@@ -796,8 +796,9 @@
                                 @foreach($pendingRequests as $req)
                                     <tr>
                                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-100">
-                                            {{ $req->vehicle->brand }} {{ $req->vehicle->model }} <br>
-                                            <span class="text-xs text-gray-500">{{ $req->vehicle->plate }}</span>
+                                            {{ $req->vehicle ? $req->vehicle->brand : 'Vehículo Eliminado' }} 
+                                            {{ $req->vehicle ? $req->vehicle->model : '' }} <br>
+                                            <span class="text-xs text-gray-500">{{ $req->vehicle ? $req->vehicle->plate : '' }}</span>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
                                             @switch($req->type)

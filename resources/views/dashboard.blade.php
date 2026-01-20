@@ -32,7 +32,8 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 @forelse($vehicles as $vehicle)
                     @php 
-                        $dispStatus = $vehicle->display_status; 
+                        // USAMOS EL ESTADO DIRECTO DE LA BD PARA EVITAR ERRORES
+                        $status = $vehicle->status; 
                     @endphp
                     <div class="bg-gray-800 border border-gray-700 rounded-3xl overflow-hidden hover:ring-2 hover:ring-indigo-500 transition-all duration-300 group shadow-2xl">
                         <div class="relative h-48 bg-gray-900 overflow-hidden">
@@ -44,17 +45,17 @@
                             
                             <div class="absolute top-4 left-4">
                                 <span class="px-3 py-1 rounded-lg text-[10px] font-black tracking-widest border
-                                    {{ $dispStatus === 'available' ? 'text-green-400 bg-green-900/30 border-green-500/50' : '' }}
-                                    {{ $dispStatus === 'workshop' ? 'text-red-400 bg-red-900/30 border-red-500/50' : '' }}
-                                    {{ $dispStatus === 'maintenance' ? 'text-yellow-400 bg-yellow-900/30 border-yellow-500/50' : '' }}
-                                    {{ $dispStatus === 'occupied' ? 'text-blue-400 bg-blue-900/30 border-blue-500/50' : '' }}">
+                                    {{ $status === 'available' ? 'text-green-400 bg-green-900/30 border-green-500/50' : '' }}
+                                    {{ $status === 'workshop' ? 'text-red-400 bg-red-900/30 border-red-500/50' : '' }}
+                                    {{ $status === 'maintenance' ? 'text-yellow-400 bg-yellow-900/30 border-yellow-500/50' : '' }}
+                                    {{ $status === 'occupied' ? 'text-blue-400 bg-blue-900/30 border-blue-500/50' : '' }}">
                                     
-                                    @switch($dispStatus)
+                                    @switch($status)
                                         @case('available') DISPONIBLE @break
                                         @case('workshop') EN TALLER @break
                                         @case('maintenance') MANTENCIÓN @break
                                         @case('occupied') RESERVADO @break
-                                        @default {{ strtoupper($dispStatus) }}
+                                        @default {{ strtoupper($status) }}
                                     @endswitch
                                 </span>
                             </div>
@@ -72,7 +73,15 @@
                                     <span class="block text-[9px] font-black text-gray-500 uppercase tracking-widest">Kilometraje</span>
                                     <span class="text-sm font-mono text-gray-100">{{ number_format($vehicle->mileage, 0, '', '.') }} KM</span>
                                 </div>
-                                <button @click="viewingVehicle = { plate: '{{ $vehicle->plate }}', brand: '{{ $vehicle->brand }}', model: '{{ $vehicle->model }}', year: {{ $vehicle->year }}, mileage: {{ $vehicle->mileage }}, status: '{{ $dispStatus }}', imageUrl: '{{ $vehicle->image_path ? Storage::url($vehicle->image_path) : '' }}' }; openViewModal = true" class="p-2 bg-gray-700 hover:bg-emerald-600 rounded-xl text-white transition-colors">
+                                <button @click="viewingVehicle = { 
+                                    plate: '{{ $vehicle->plate }}', 
+                                    brand: '{{ $vehicle->brand }}', 
+                                    model: '{{ $vehicle->model }}', 
+                                    year: {{ $vehicle->year }}, 
+                                    mileage: {{ $vehicle->mileage }}, 
+                                    status: '{{ $status }}', 
+                                    imageUrl: '{{ $vehicle->image_path ? Storage::url($vehicle->image_path) : '' }}' 
+                                }; openViewModal = true" class="p-2 bg-gray-700 hover:bg-emerald-600 rounded-xl text-white transition-colors">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 </button>
                             </div>
@@ -80,9 +89,47 @@
                     </div>
                 @empty
                     <div class="col-span-full py-20 bg-gray-900/40 rounded-3xl border-2 border-dashed border-gray-800 flex flex-col items-center">
-                        <p class="text-gray-400 uppercase tracking-widest text-xs">No hay vehículos para mostrar</p>
+                        <p class="text-gray-500 text-xs uppercase tracking-[0.2em]">No hay vehículos activos para mostrar</p>
                     </div>
                 @endforelse
+            </div>
+        </div>
+
+        <div x-show="openViewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="openViewModal = false"></div>
+            <div class="relative bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden z-50">
+                <div class="p-8">
+                    <h2 class="text-xl font-bold text-white mb-6 border-b border-gray-700 pb-2">Ficha del Vehículo</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-gray-900 rounded-xl p-2 border border-gray-700">
+                            <template x-if="viewingVehicle.imageUrl">
+                                <img :src="viewingVehicle.imageUrl" class="w-full h-56 object-cover rounded-lg">
+                            </template>
+                            <template x-if="!viewingVehicle.imageUrl">
+                                <div class="w-full h-56 flex items-center justify-center bg-gray-800 text-gray-500 italic rounded-lg">Sin Imagen</div>
+                            </template>
+                        </div>
+                        <div class="space-y-4 text-white">
+                            <div><span class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold">Patente</span><span class="text-2xl font-black text-indigo-400" x-text="viewingVehicle.plate"></span></div>
+                            <div><span class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold">Marca / Modelo</span><span class="text-lg" x-text="viewingVehicle.brand + ' ' + viewingVehicle.model"></span></div>
+                            <div>
+                                <span class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold">Estado</span>
+                                <span class="text-lg font-bold" 
+                                    :class="{
+                                        'text-green-400': viewingVehicle.status === 'available',
+                                        'text-blue-400': viewingVehicle.status === 'occupied',
+                                        'text-red-400': viewingVehicle.status === 'workshop',
+                                        'text-yellow-400': viewingVehicle.status === 'maintenance'
+                                    }"
+                                    x-text="viewingVehicle.status === 'occupied' ? 'RESERVADO' : (viewingVehicle.status === 'available' ? 'DISPONIBLE' : viewingVehicle.status.toUpperCase())">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex justify-end">
+                        <button @click="openViewModal = false" class="px-8 py-2 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition uppercase text-xs tracking-widest">Cerrar</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
