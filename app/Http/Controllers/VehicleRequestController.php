@@ -74,7 +74,7 @@ class VehicleRequestController extends Controller
         }
 
         $request->update(['status' => 'approved']);
-        
+
         $request->vehicle->update(['status' => 'occupied']);
         return back()->with('success', 'Reserva aprobada exitosamente.');
     }
@@ -106,6 +106,10 @@ class VehicleRequestController extends Controller
             $vehicleRequest->vehicle->update(['mileage' => $request->return_mileage]);
         }
 
+        $vehicleRequest->vehicle->update([
+            'status' => 'available' 
+        ]);
+        
         $vehicleRequest->update([
             'status' => 'completed',
             'return_mileage' => $request->return_mileage
