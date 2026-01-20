@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Vehicle;            
+use App\Models\MaintenanceRequest;  
+use App\Models\VehicleRequest;      
+use Illuminate\Support\Facades\Storage;
 
 class VehicleController extends Controller
 {
@@ -15,19 +19,19 @@ class VehicleController extends Controller
         $vehicles = \App\Models\Vehicle::all();
         
         // Estados
-        $countDisponible = \App\Models\Vehicle::where('status', 'available')->count();
-        $countTaller = \App\Models\Vehicle::where('status', 'workshop')->count();
-        $countMantenimiento = \App\Models\Vehicle::where('status', 'maintenance')->count();
-        $countAsignado = \App\Models\Vehicle::where('status', 'assigned')->count();
+        $countDisponible = Vehicle::where('status', 'available')->count();
+        $countTaller = Vehicle::where('status', 'workshop')->count();
+        $countMantenimiento = Vehicle::where('status', 'maintenance')->count();
+        $countAsignado = Vehicle::where('status', 'occupied')->count();
 
         // Solicitudes de mantenimiento
-        $pendingRequests = \App\Models\MaintenanceRequest::with('vehicle')
+        $pendingRequests = MaintenanceRequest::with('vehicle')
             ->where('status', 'pending')
             ->latest()
             ->get();
 
-        // CAMBIOS NICO
-        $pendingReservations = \App\Models\VehicleRequest::with(['vehicle', 'user'])
+        
+        $pendingReservations = VehicleRequest::with(['vehicle', 'user'])
             ->where('status', 'pending')
             ->latest()
             ->get();

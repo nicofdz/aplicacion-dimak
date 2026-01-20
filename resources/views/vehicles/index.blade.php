@@ -774,9 +774,13 @@
                                 </tbody>
                             </table>
                         </div>
-                    @else
-                        <p class="text-gray-500 italic mb-4">No hay reservas pendientes.</p>
-                    @endif
+                    <div class="mb-8">
+                        <h3 class="text-md font-bold text-indigo-400 mb-3 uppercase tracking-wider">Reservas de Vehículos</h3>
+                        @if(isset($pendingReservations) && $pendingReservations->count() > 0)
+                            @else
+                            <p class="text-gray-500 italic mb-4">No hay reservas pendientes.</p>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="border-t border-gray-700 pt-4">
