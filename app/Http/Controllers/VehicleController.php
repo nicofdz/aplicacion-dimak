@@ -14,26 +14,36 @@ class VehicleController extends Controller
     {
         $vehicles = \App\Models\Vehicle::all();
         
+        // Estados
         $countDisponible = \App\Models\Vehicle::where('status', 'available')->count();
         $countTaller = \App\Models\Vehicle::where('status', 'workshop')->count();
         $countMantenimiento = \App\Models\Vehicle::where('status', 'maintenance')->count();
         $countAsignado = \App\Models\Vehicle::where('status', 'assigned')->count();
 
+        // Solicitudes de mantenimiento
         $pendingRequests = \App\Models\MaintenanceRequest::with('vehicle')
             ->where('status', 'pending')
             ->latest()
             ->get();
 
+        // CAMBIOS NICO
+        $pendingReservations = \App\Models\VehicleRequest::with(['vehicle', 'user'])
+            ->where('status', 'pending')
+            ->latest()
+            ->get();
+
+        // 
         $data = compact(
             'vehicles', 
             'pendingRequests', 
+            'pendingReservations',
             'countDisponible', 
             'countAsignado', 
             'countMantenimiento', 
             'countTaller'
         );
 
-        
+        // Lógica de separación de vistas
         if ($request->routeIs('dashboard')) {
             return view('dashboard', $data);
         }

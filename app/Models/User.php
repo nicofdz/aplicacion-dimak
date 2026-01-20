@@ -46,4 +46,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function vehicleRequests()
+    {
+        return $this->hasMany(VehicleRequest::class);
+    }
 }

@@ -3,9 +3,10 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ConductorController;
+
 // Página de inicio
 Route::get('/', function () {
-    return view('welcome');
+    return Auth::check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
 
 // Dashboard (requiere autenticación y verificación)
@@ -19,13 +20,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Rutas de Vehículos
-    // Rutas de Vehículos
+    // Rutas de Vehículos (Papelera)
     Route::get('papelera/vehiculos', [\App\Http\Controllers\VehicleController::class, 'trash'])->name('vehicles.trash');
     Route::put('papelera/vehiculos/{id}/restore', [\App\Http\Controllers\VehicleController::class, 'restore'])->name('vehicles.restore');
     Route::delete('papelera/vehiculos/{id}/force-delete', [\App\Http\Controllers\VehicleController::class, 'forceDelete'])->name('vehicles.force-delete');
 
-    // Resource with custom names to preserve existing helper calls
+    // Recurso de Vehículos
     Route::resource('vehiculos', \App\Http\Controllers\VehicleController::class)
         ->names([
             'index' => 'vehicles.index',
@@ -39,7 +39,7 @@ Route::middleware('auth')->group(function () {
         ->parameters(['vehiculos' => 'vehicle'])
         ->except(['show']);
 
-    //Rutas de conductores
+    // Rutas de Conductores
     Route::get('/conductores/trash', [ConductorController::class, 'trash'])->name('conductores.trash');
     Route::post('/conductores/{id}/restore', [ConductorController::class, 'restore'])->name('conductores.restore');
     Route::delete('/conductores/{id}/force-delete', [ConductorController::class, 'forceDelete'])->name('conductores.force-delete');
@@ -57,12 +57,14 @@ Route::middleware('auth')->group(function () {
     Route::post('vehiculos/{vehicle}/maintenance/complete', [\App\Http\Controllers\MaintenanceController::class, 'complete'])->name('vehicles.maintenance.complete');
     Route::post('maintenance/requests/{id}/accept', [\App\Http\Controllers\MaintenanceController::class, 'acceptRequest'])->name('maintenance.requests.accept');
 
-    
+    // Rutas de Solicitudes de Vehículos (Reservas]
+    Route::get('/solicitar-vehiculo', [\App\Http\Controllers\VehicleRequestController::class, 'create'])->name('requests.create');
+    Route::post('/solicitar-vehiculo', [\App\Http\Controllers\VehicleRequestController::class, 'store'])->name('requests.store');
+    Route::post('/requests/{id}/approve', [\App\Http\Controllers\VehicleRequestController::class, 'approve'])->name('requests.approve');
+    Route::post('/requests/{id}/reject', [\App\Http\Controllers\VehicleRequestController::class, 'reject'])->name('requests.reject');
+    Route::get('/mis-reservas', [\App\Http\Controllers\VehicleRequestController::class, 'index'])->name('requests.index');
+    Route::post('/requests/{id}/complete', [\App\Http\Controllers\VehicleRequestController::class, 'complete'])->name('requests.complete');
 });
 
 // Incluir rutas de autenticación
 require __DIR__ . '/auth.php';
-
-
-
-

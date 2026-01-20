@@ -64,5 +64,27 @@
             </svg>
             <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Conductores</span>
         </a>
+
+        <!-- Solicitar Vehículo -->
+        <a href="{{ route('requests.create') }}"
+            class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"
+            :class="{'justify-center': !open, 'bg-gray-800 text-white': {{ request()->routeIs('requests.create') ? 'true' : 'false' }}}">
+            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2h-2a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Solicitar Vehículo</span>
+        </a>
+
+        <!-- Mis Reservas -->
+        <a href="{{ route('requests.index') }}"
+            class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"
+            :class="{'justify-center': !open, 'bg-gray-800 text-white': {{ request()->routeIs('requests.index') ? 'true' : 'false' }}}">
+            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Mis Reservas</span>
+        </a>
     </nav>
 </aside>
