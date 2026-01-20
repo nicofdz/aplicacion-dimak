@@ -59,11 +59,80 @@
             </div>
         </div>
 
+        <!-- Name -->
         <div>
             <x-input-label for="name" :value="__('Nombre')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)"
-                required autofocus autocomplete="name" />
+            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required
+                autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
+        </div>
+
+        <!-- RUT -->
+        <div x-data="{
+            rut: '{{ old('rut', $user->rut) }}',
+            error: '',
+            formatRut() {
+                let value = this.rut.replace(/[^0-9kK]/g, '').toUpperCase();
+                if (value.length > 1) {
+                    const dv = value.slice(-1);
+                    let body = value.slice(0, -1);
+                    body = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    this.rut = body + '-' + dv;
+                } else {
+                    this.rut = value;
+                }
+                this.validateRut();
+            },
+            validateRut() {
+                let value = this.rut.replace(/[^0-9kK]/g, '').toUpperCase();
+                if (value.length < 8) {
+                    this.error = ''; // Demasiado corto para validar aún
+                    return;
+                }
+                const body = value.slice(0, -1);
+                const dv = value.slice(-1);
+                let suma = 0;
+                let multiplo = 2;
+                for (let i = body.length - 1; i >= 0; i--) {
+                    suma += multiplo * body.charAt(i);
+                    multiplo = (multiplo + 1) % 8 || 2;
+                }
+                const calculado = 11 - (suma % 11);
+                const dvCalculado = calculado === 11 ? '0' : (calculado === 10 ? 'K' : calculado.toString());
+                
+                if (dv !== dvCalculado) {
+                    this.error = 'RUT inválido';
+                    document.getElementById('rut').setCustomValidity('RUT inválido');
+                } else {
+                    this.error = '';
+                    document.getElementById('rut').setCustomValidity('');
+                }
+            }
+        }">
+            <x-input-label for="rut" :value="__('RUT')" />
+            <x-text-input id="rut" name="rut" type="text" class="mt-1 block w-full" 
+                x-model="rut" 
+                @input="formatRut()" 
+                placeholder="12.345.678-9" 
+                maxlength="12" />
+            <p x-show="error" x-text="error" class="text-sm text-red-600 mt-1"></p>
+            <x-input-error class="mt-2" :messages="$errors->get('rut')" />
+        </div>
+
+        <!-- Phone -->
+        <div>
+            <x-input-label for="phone" :value="__('Teléfono')" />
+            <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full" :value="old('phone', $user->phone)"
+                placeholder="+56 9 1234 5678" />
+            <x-input-error class="mt-2" :messages="$errors->get('phone')" />
+        </div>
+
+        <!-- Address -->
+        <div>
+            <x-input-label for="address" :value="__('Dirección')" />
+            <x-text-input id="address" name="address" type="text" class="mt-1 block w-full" :value="old('address', $user->address)"
+                placeholder="Av. Siempre Viva 742" />
+            <x-input-error class="mt-2" :messages="$errors->get('address')" />
         </div>
 
         <div>

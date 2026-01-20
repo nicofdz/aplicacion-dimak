@@ -41,6 +41,19 @@
             <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Dashboard</span>
         </a>
 
+        @if(Auth::user()->role === 'admin')
+            <!-- Gestión de Usuarios -->
+            <a href="{{ route('users.index') }}"
+                class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"
+                :class="{'justify-center': !open, 'bg-gray-800 text-white': {{ request()->routeIs('users.*') ? 'true' : 'false' }}}">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Gestión de Usuarios</span>
+            </a>
+        @endif
+
         <!-- Vehículos -->
         <a href="{{ route('vehicles.index') }}"
             class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"

@@ -8,10 +8,10 @@ Route::get('/', function () {
     return Auth::check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
 
-// Dashboard (requiere autenticación y verificación)
+// Panel de control (requiere autenticación y verificación)
 Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'force.password.change'])->name('dashboard');
 
 // Grupo de rutas para el perfil de usuario
 Route::middleware('auth')->group(function () {
@@ -69,8 +69,19 @@ Route::middleware('auth')->group(function () {
 });
 
 // Incluir rutas de autenticación
+// Rutas de cambio de contraseña forzado
+Route::middleware(['auth'])->group(function () {
+    Route::get('/change-password', [App\Http\Controllers\ForceChangePasswordController::class, 'show'])
+        ->name('password.change.notice');
+    Route::post('/change-password', [App\Http\Controllers\ForceChangePasswordController::class, 'update'])
+        ->name('password.change.update');
+});
+
+// Rutas de gestión de usuarios
+Route::middleware(['auth', 'force.password.change'])->group(function () {
+    Route::put('users/{id}/restore', [App\Http\Controllers\UserController::class, 'restore'])->name('users.restore');
+    Route::delete('users/{id}/force-delete', [App\Http\Controllers\UserController::class, 'forceDelete'])->name('users.force-delete');
+    Route::resource('users', App\Http\Controllers\UserController::class);
+});
+
 require __DIR__ . '/auth.php';
-
-
-
-
