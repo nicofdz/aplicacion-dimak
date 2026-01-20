@@ -24,13 +24,11 @@
                             </path>
                         </svg>
                         Solicitudes
-                        @if($pendingRequests->count() > 0)
+                        @if($pendingRequests->count() > 0 || (isset($pendingReservations) && $pendingReservations->count() > 0))
                             <span class="absolute -top-1 -right-1 flex h-4 w-4">
-                                <span
-                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span
-                                    class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[10px] items-center justify-center font-bold">
-                                    {{ $pendingRequests->count() }}
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[10px] items-center justify-center font-bold">
+                                    {{ $pendingRequests->count() + ($pendingReservations ?? collect())->count() }}
                                 </span>
                             </span>
                         @endif
@@ -111,7 +109,7 @@
                                         <td class="px-5 py-4 text-sm">
                                             {{ $vehicle->year }}
                                         </td>
-                                        <td class="px-5 py-4 text-sm">
+                                            <td class="px-5 py-4 text-sm">
                                             @php
                                                 $displayStatus = $vehicle->display_status;
                                                 $statusClasses = [
@@ -774,13 +772,9 @@
                                 </tbody>
                             </table>
                         </div>
-                    <div class="mb-8">
-                        <h3 class="text-md font-bold text-indigo-400 mb-3 uppercase tracking-wider">Reservas de Vehículos</h3>
-                        @if(isset($pendingReservations) && $pendingReservations->count() > 0)
-                            @else
-                            <p class="text-gray-500 italic mb-4">No hay reservas pendientes.</p>
-                        @endif
-                    </div>
+                    @else
+                        <p class="text-gray-500 italic mb-4">No hay reservas pendientes.</p>
+                    @endif
                 </div>
 
                 <div class="border-t border-gray-700 pt-4">
