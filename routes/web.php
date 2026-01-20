@@ -9,9 +9,9 @@ Route::get('/', function () {
 });
 
 // Dashboard (requiere autenticación y verificación)
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\VehicleController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 // Grupo de rutas para el perfil de usuario
 Route::middleware('auth')->group(function () {
@@ -25,7 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::put('papelera/vehiculos/{id}/restore', [\App\Http\Controllers\VehicleController::class, 'restore'])->name('vehicles.restore');
     Route::delete('papelera/vehiculos/{id}/force-delete', [\App\Http\Controllers\VehicleController::class, 'forceDelete'])->name('vehicles.force-delete');
 
-    // Recurso con nombres personalizados para mantener compatibilidad
+    // Resource with custom names to preserve existing helper calls
     Route::resource('vehiculos', \App\Http\Controllers\VehicleController::class)
         ->names([
             'index' => 'vehicles.index',
@@ -57,7 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::post('vehiculos/{vehicle}/maintenance/complete', [\App\Http\Controllers\MaintenanceController::class, 'complete'])->name('vehicles.maintenance.complete');
     Route::post('maintenance/requests/{id}/accept', [\App\Http\Controllers\MaintenanceController::class, 'acceptRequest'])->name('maintenance.requests.accept');
 
-
+    
 });
 
 // Incluir rutas de autenticación

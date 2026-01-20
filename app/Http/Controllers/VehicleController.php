@@ -10,15 +10,35 @@ class VehicleController extends Controller
     /**
      * Muestra un listado del recurso.
      */
-    public function index()
+    public function index(Request $request)
     {
         $vehicles = \App\Models\Vehicle::all();
+        
+        $countDisponible = \App\Models\Vehicle::where('status', 'available')->count();
+        $countTaller = \App\Models\Vehicle::where('status', 'workshop')->count();
+        $countMantenimiento = \App\Models\Vehicle::where('status', 'maintenance')->count();
+        $countAsignado = \App\Models\Vehicle::where('status', 'assigned')->count();
+
         $pendingRequests = \App\Models\MaintenanceRequest::with('vehicle')
             ->where('status', 'pending')
             ->latest()
             ->get();
 
-        return view('vehicles.index', compact('vehicles', 'pendingRequests'));
+        $data = compact(
+            'vehicles', 
+            'pendingRequests', 
+            'countDisponible', 
+            'countAsignado', 
+            'countMantenimiento', 
+            'countTaller'
+        );
+
+        
+        if ($request->routeIs('dashboard')) {
+            return view('dashboard', $data);
+        }
+
+        return view('vehicles.index', $data);
     }
 
     /**
