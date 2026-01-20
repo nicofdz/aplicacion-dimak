@@ -24,13 +24,11 @@
                             </path>
                         </svg>
                         Solicitudes
-                        @if($pendingRequests->count() > 0)
+                        @if($pendingRequests->count() > 0 || (isset($pendingReservations) && $pendingReservations->count() > 0))
                             <span class="absolute -top-1 -right-1 flex h-4 w-4">
-                                <span
-                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span
-                                    class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[10px] items-center justify-center font-bold">
-                                    {{ $pendingRequests->count() }}
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[10px] items-center justify-center font-bold">
+                                    {{ $pendingRequests->count() + ($pendingReservations ?? collect())->count() }}
                                 </span>
                             </span>
                         @endif
@@ -111,7 +109,7 @@
                                         <td class="px-5 py-4 text-sm">
                                             {{ $vehicle->year }}
                                         </td>
-                                        <td class="px-5 py-4 text-sm">
+                                            <td class="px-5 py-4 text-sm">
                                             @php
                                                 $displayStatus = $vehicle->display_status;
                                                 $statusClasses = [
@@ -798,8 +796,9 @@
                                 @foreach($pendingRequests as $req)
                                     <tr>
                                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-100">
-                                            {{ $req->vehicle->brand }} {{ $req->vehicle->model }} <br>
-                                            <span class="text-xs text-gray-500">{{ $req->vehicle->plate }}</span>
+                                            {{ $req->vehicle ? $req->vehicle->brand : 'Vehículo Eliminado' }} 
+                                            {{ $req->vehicle ? $req->vehicle->model : '' }} <br>
+                                            <span class="text-xs text-gray-500">{{ $req->vehicle ? $req->vehicle->plate : '' }}</span>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
                                             @switch($req->type)

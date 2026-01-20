@@ -55,7 +55,9 @@ class MaintenanceController extends Controller
         $maintenanceRequest->update(['status' => 'in_progress']);
 
         // Actualizar estado del vehículo
-        $maintenanceRequest->vehicle->update(['status' => 'maintenance']);
+        if ($maintenanceRequest->vehicle) {
+            $maintenanceRequest->vehicle->update(['status' => 'maintenance']);
+        }
 
         return back()->with('success', 'Solicitud aceptada. El vehículo ha pasado a mantenimiento.');
     }

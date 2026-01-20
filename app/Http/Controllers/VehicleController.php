@@ -4,26 +4,55 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Vehicle;            
+use App\Models\MaintenanceRequest;  
+use App\Models\VehicleRequest;      
+use Illuminate\Support\Facades\Storage;
 
 class VehicleController extends Controller
 {
     /**
      * Muestra un listado del recurso.
      */
-    public function index()
+    public function index(Request $request)
     {
         $vehicles = \App\Models\Vehicle::all();
-        $pendingRequests = \App\Models\MaintenanceRequest::with('vehicle')
+        
+        // Estados
+        $countDisponible = Vehicle::where('status', 'available')->count();
+        $countTaller = Vehicle::where('status', 'workshop')->count();
+        $countMantenimiento = Vehicle::where('status', 'maintenance')->count();
+        $countAsignado = Vehicle::where('status', 'occupied')->count();
+
+        // Solicitudes de mantenimiento
+        $pendingRequests = MaintenanceRequest::with('vehicle')
             ->where('status', 'pending')
             ->latest()
             ->get();
 
-        $pendingReservations = \App\Models\VehicleRequest::with(['vehicle', 'user'])
+        
+        $pendingReservations = VehicleRequest::with(['vehicle', 'user'])
             ->where('status', 'pending')
             ->latest()
             ->get();
 
-        return view('vehicles.index', compact('vehicles', 'pendingRequests', 'pendingReservations'));
+        // 
+        $data = compact(
+            'vehicles', 
+            'pendingRequests', 
+            'pendingReservations',
+            'countDisponible', 
+            'countAsignado', 
+            'countMantenimiento', 
+            'countTaller'
+        );
+
+        // Lógica de separación de vistas
+        if ($request->routeIs('dashboard')) {
+            return view('dashboard', $data);
+        }
+
+        return view('vehicles.index', $data);
     }
 
     /**
