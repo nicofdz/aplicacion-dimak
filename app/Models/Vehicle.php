@@ -73,14 +73,22 @@ class Vehicle extends Model
     /**
      * Obtiene el estado para mostrar (incluyendo reservas activas).
      */
+    /**
+     * Obtiene el estado para mostrar (incluyendo reservas activas y documentos).
+     */
     public function getDisplayStatusAttribute()
     {
-        // Si el estado en BD no es available, lo respetamos (incluye occupied, out_of_service, maintenance)
+        // 1. Prioridad Máxima: Documentación Vencida
+        if ($this->hasExpiredDocuments()) {
+            return 'expired_documents';
+        }
+
+        // 2. Estado manual (falla mecánica, mantención, etc.)
         if ($this->status !== 'available') {
             return $this->status;
         }
 
-        // Fallback: Verificar si tiene una reserva ACTIVA en este momento aunque el estado diga available
+        // 3. Reserva Activa (ocupado)
         $activeReservation = $this->getActiveReservationAttribute();
 
         if ($activeReservation) {
@@ -88,6 +96,14 @@ class Vehicle extends Model
         }
 
         return 'available';
+    }
+
+    /**
+     * Verifica si tiene documentos vencidos.
+     */
+    public function hasExpiredDocuments()
+    {
+        return $this->documents()->where('expires_at', '<', now()->startOfDay())->exists();
     }
 
     /**

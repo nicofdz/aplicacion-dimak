@@ -43,9 +43,9 @@ class VehicleRequestController extends Controller
                 ->with('error', 'Su Licencia de Conducir está vencida. Por favor actualice el documento para continuar.');
         }
 
-        $vehicles = Vehicle::where('status', '!=', 'workshop')
-            ->where('status', '!=', 'maintenance')
-            ->get();
+        $vehicles = Vehicle::all()->filter(function ($vehicle) {
+            return $vehicle->display_status === 'available';
+        });
         return view('requests.create', compact('vehicles'));
     }
 

@@ -84,7 +84,27 @@
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <div x-data="{ open: false }">
+                                                <div x-data="{ 
+                                                    open: false, 
+                                                    carouselOpen: false, 
+                                                    images: [], 
+                                                    currentImage: '', 
+                                                    currentIndex: 0,
+                                                    openCarousel(imgs, index) {
+                                                        this.images = imgs;
+                                                        this.currentIndex = index;
+                                                        this.currentImage = this.images[index];
+                                                        this.carouselOpen = true;
+                                                    },
+                                                    next() {
+                                                        this.currentIndex = (this.currentIndex + 1) % this.images.length;
+                                                        this.currentImage = this.images[this.currentIndex];
+                                                    },
+                                                    prev() {
+                                                        this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length;
+                                                        this.currentImage = this.images[this.currentIndex];
+                                                    }
+                                                }">
                                                     <button @click="open = true" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400">Ver Ficha</button>
 
                                                     <!-- Modal Detalle -->
@@ -135,11 +155,17 @@
                                                                                     @if($return->photos_paths && count($return->photos_paths) > 0)
                                                                                         <div class="col-span-2 mt-4">
                                                                                             <h4 class="font-bold mb-2">Fotos Adjuntas</h4>
+                                                                                            @php
+                                                                                                $gallery = collect($return->photos_paths)->map(fn($p) => Storage::url($p))->values();
+                                                                                            @endphp
                                                                                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                                                                                @foreach($return->photos_paths as $photo)
-                                                                                                    <a href="{{ Storage::url($photo) }}" target="_blank" class="block group relative">
-                                                                                                        <img src="{{ Storage::url($photo) }}" class="w-full h-24 object-cover rounded border hover:opacity-75 transition" alt="Foto Entrega">
-                                                                                                    </a>
+                                                                                                @foreach($gallery as $index => $photoUrl)
+                                                                                                    <button @click="openCarousel({{ $gallery->toJson() }}, {{ $index }})" class="block group relative w-full h-24 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded">
+                                                                                                        <img src="{{ $photoUrl }}" class="w-full h-full object-cover rounded border hover:opacity-75 transition" alt="Foto Entrega">
+                                                                                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                                                                                                            <svg class="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                                                                                                        </div>
+                                                                                                    </button>
                                                                                                 @endforeach
                                                                                             </div>
                                                                                         </div>
@@ -151,6 +177,46 @@
                                                                     <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                                                                         <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" @click="open = false">
                                                                             Cerrar
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Modal Carousel (Lightbox) -->
+                                                    <template x-teleport="body">
+                                                        <div x-show="carouselOpen" class="fixed inset-0 z-[70] overflow-y-auto" style="display: none;" x-transition>
+                                                            <!-- Backdrop -->
+                                                            <div class="fixed inset-0 bg-black bg-opacity-95 transition-opacity" @click="carouselOpen = false"></div>
+
+                                                            <!-- Content -->
+                                                            <div class="flex items-center justify-center min-h-screen p-4 pointer-events-none">
+                                                                <div class="relative w-full h-full flex flex-col items-center justify-center pointer-events-auto">
+                                                                    
+                                                                    <!-- Close Button -->
+                                                                    <button @click="carouselOpen = false" class="absolute top-4 right-4 text-white hover:text-gray-300 z-[80] focus:outline-none p-2 rounded-full bg-black/50">
+                                                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                                    </button>
+
+                                                                    <!-- Main Container for Image + Nav -->
+                                                                    <div class="relative flex items-center justify-center w-full max-w-6xl">
+                                                                        <!-- Previous Button -->
+                                                                        <button x-show="images.length > 1" @click.stop="prev()" class="absolute left-2 md:-left-12 p-3 text-white hover:text-gray-300 focus:outline-none bg-black/50 hover:bg-black/70 rounded-full z-[80] transition">
+                                                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                                                        </button>
+
+                                                                        <!-- Image -->
+                                                                        <div class="relative">
+                                                                            <img :src="currentImage" class="max-w-full max-h-[85vh] object-contain rounded shadow-2xl" @click.stop="">
+                                                                            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 px-3 py-1 rounded-full text-white text-sm font-mono" x-show="images.length > 1">
+                                                                                <span x-text="currentIndex + 1"></span> / <span x-text="images.length"></span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <!-- Next Button -->
+                                                                        <button x-show="images.length > 1" @click.stop="next()" class="absolute right-2 md:-right-12 p-3 text-white hover:text-gray-300 focus:outline-none bg-black/50 hover:bg-black/70 rounded-full z-[80] transition">
+                                                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                                                         </button>
                                                                     </div>
                                                                 </div>

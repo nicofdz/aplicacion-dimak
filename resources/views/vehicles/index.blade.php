@@ -117,12 +117,14 @@
                                                     'out_of_service' => 'text-red-400 bg-red-900/30 border border-red-900',
                                                     'maintenance' => 'text-yellow-400 bg-yellow-900/30 border border-yellow-900',
                                                     'occupied' => 'text-blue-400 bg-blue-900/30 border border-blue-900',
+                                                    'expired_documents' => 'text-red-500 bg-red-950 border border-red-500 font-bold',
                                                 ];
                                                 $statusLabel = [
                                                     'available' => 'DISPONIBLE',
                                                     'out_of_service' => 'FUERA DE SERVICIO',
                                                     'maintenance' => 'MANTENIMIENTO',
                                                     'occupied' => 'RESERVADO',
+                                                    'expired_documents' => 'DOC. VENCIDO',
                                                 ];
                                             @endphp
                                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md {{ $statusClasses[$displayStatus] ?? 'text-gray-400 bg-gray-800' }}">
@@ -543,8 +545,11 @@
                                     class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
                             </div>
                             <div>
-                                <x-input-label for="edit_soap_expires" :value="__('Vencimiento SOAP')" class="text-gray-400" />
-                                <x-text-input id="edit_soap_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="soap_expires_at" x-model="editingVehicle.soap_expires_at" />
+                                <x-input-label for="edit_soap_expires" :value="__('Vencimiento SOAP')" class="text-gray-400" ::class="{'text-red-500 font-bold': editingVehicle.soap_expires_at && editingVehicle.soap_expires_at < new Date().toISOString().split('T')[0]}" />
+                                <x-text-input id="edit_soap_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" ::class="{'border-red-500 focus:border-red-500 ring-1 ring-red-500': editingVehicle.soap_expires_at && editingVehicle.soap_expires_at < new Date().toISOString().split('T')[0]}"  type="date" name="soap_expires_at" x-model="editingVehicle.soap_expires_at" />
+                                <template x-if="editingVehicle.soap_expires_at && editingVehicle.soap_expires_at < new Date().toISOString().split('T')[0]">
+                                    <span class="text-xs text-red-500 font-bold mt-1 block">⚠️ VENCIDO</span>
+                                </template>
                             </div>
                         </div>
 
@@ -556,8 +561,11 @@
                                     class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
                             </div>
                             <div>
-                                <x-input-label for="edit_permit_expires" :value="__('Vencimiento Permiso')" class="text-gray-400" />
-                                <x-text-input id="edit_permit_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="permit_expires_at" x-model="editingVehicle.permit_expires_at"/>
+                                <x-input-label for="edit_permit_expires" :value="__('Vencimiento Permiso')" class="text-gray-400" ::class="{'text-red-500 font-bold': editingVehicle.permit_expires_at && editingVehicle.permit_expires_at < new Date().toISOString().split('T')[0]}"/>
+                                <x-text-input id="edit_permit_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" ::class="{'border-red-500 focus:border-red-500 ring-1 ring-red-500': editingVehicle.permit_expires_at && editingVehicle.permit_expires_at < new Date().toISOString().split('T')[0]}" type="date" name="permit_expires_at" x-model="editingVehicle.permit_expires_at"/>
+                                <template x-if="editingVehicle.permit_expires_at && editingVehicle.permit_expires_at < new Date().toISOString().split('T')[0]">
+                                    <span class="text-xs text-red-500 font-bold mt-1 block">⚠️ VENCIDO</span>
+                                </template>
                             </div>
                         </div>
 
@@ -569,8 +577,11 @@
                                     class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
                             </div>
                             <div>
-                                <x-input-label for="edit_technical_expires" :value="__('Vencimiento Revisión')" class="text-gray-400" />
-                                <x-text-input id="edit_technical_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="technical_expires_at" x-model="editingVehicle.technical_expires_at" />
+                                <x-input-label for="edit_technical_expires" :value="__('Vencimiento Revisión')" class="text-gray-400" ::class="{'text-red-500 font-bold': editingVehicle.technical_expires_at && editingVehicle.technical_expires_at < new Date().toISOString().split('T')[0]}" />
+                                <x-text-input id="edit_technical_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" ::class="{'border-red-500 focus:border-red-500 ring-1 ring-red-500': editingVehicle.technical_expires_at && editingVehicle.technical_expires_at < new Date().toISOString().split('T')[0]}" type="date" name="technical_expires_at" x-model="editingVehicle.technical_expires_at" />
+                                <template x-if="editingVehicle.technical_expires_at && editingVehicle.technical_expires_at < new Date().toISOString().split('T')[0]">
+                                    <span class="text-xs text-red-500 font-bold mt-1 block">⚠️ VENCIDO</span>
+                                </template>
                             </div>
                         </div>
                     </div>
