@@ -6,3 +6,8 @@ use Illuminate\Support\Facades\Artisan;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Muestra una cita inspiradora');
+
+// Programar chequeo diario de documentos vencidos
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('vehicles:check-documents')->dailyAt('09:00');

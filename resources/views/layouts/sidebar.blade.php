@@ -1,5 +1,17 @@
-<aside x-data="{ open: true }" :class="open ? 'w-64' : 'w-20'"
-    class="flex-shrink-0 min-h-screen bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out flex flex-col pt-0">
+<!-- Mobile Backdrop -->
+<div x-show="mobileSidebarOpen" x-transition:enter="transition-opacity ease-linear duration-300"
+    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+    x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0" class="fixed inset-0 z-40 bg-black/50 md:hidden"
+    @click="mobileSidebarOpen = false"></div>
+
+<aside x-data="{ open: true }" :class="{
+           'w-64': open, 
+           'w-20': !open,
+           '-translate-x-full': !mobileSidebarOpen,
+           'translate-x-0': mobileSidebarOpen
+       }"
+    class="fixed inset-y-0 left-0 z-50 flex-shrink-0 min-h-screen bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out flex flex-col pt-0 md:relative md:translate-x-0">
 
     <!-- Toggle Button & Logo Area -->
     <div class="h-16 flex items-center justify-between px-4 bg-gray-900 border-b border-gray-800">

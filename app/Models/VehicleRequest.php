@@ -17,7 +17,16 @@ class VehicleRequest extends Model
         'status',
         'return_mileage',
         'destination_type',
+        'conductor_id',
     ];
+
+    /**
+     * Obtiene conductor asociado (si aplica).
+     */
+    public function conductor()
+    {
+        return $this->belongsTo(Conductor::class);
+    }
 
     /**
      * Obtiene los atributos que deben ser convertidos.

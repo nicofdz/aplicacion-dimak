@@ -6,22 +6,23 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use App\Models\Vehicle;
 
 class VehicleDocumentExpired extends Notification
 {
     use Queueable;
 
+    public $document;
     public $vehicle;
-    public $documentType;
+    public $daysRemaining;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(Vehicle $vehicle, $documentType)
+    public function __construct($document, $daysRemaining)
     {
-        $this->vehicle = $vehicle;
-        $this->documentType = $documentType;
+        $this->document = $document;
+        $this->vehicle = $document->vehicle;
+        $this->daysRemaining = $daysRemaining;
     }
 
     /**
@@ -41,18 +42,27 @@ class VehicleDocumentExpired extends Notification
      */
     public function toArray(object $notifiable): array
     {
-        $docLabel = match($this->documentType) {
-            'insurance' => 'Seguro Obligatorio',
+        $typeLabels = [
+            'insurance' => 'Seguro',
             'permit' => 'Permiso de Circulación',
             'technical_review' => 'Revisión Técnica',
-            default => 'Documento',
-        };
+        ];
+
+        $docName = $typeLabels[$this->document->type] ?? 'Documento';
+        $status = $this->daysRemaining <= 0 ? 'VENCIDO' : 'por vencer';
+        $message = "{$docName} {$status}";
+
+        if ($this->daysRemaining > 0) {
+            $message .= " en {$this->daysRemaining} días";
+        }
 
         return [
-            'title' => 'Documento Vencido',
-            'message' => "El vehículo {$this->vehicle->plate} tiene el documento {$docLabel} vencido.",
+            'message' => $message,
             'vehicle_id' => $this->vehicle->id,
-            'type' => 'document_expired',
+            'plate' => $this->vehicle->plate,
+            'brand_model' => "{$this->vehicle->brand} {$this->vehicle->model}",
+            'type' => $this->daysRemaining <= 0 ? 'danger' : 'warning',
+            'document_type' => $this->document->type,
         ];
     }
 }

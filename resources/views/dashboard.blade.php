@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12" x-data="{ openViewModal: false, viewingVehicle: {} }">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-2xl p-6 mb-12 border border-gray-700">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 divide-x-0 md:divide-x divide-gray-700">
@@ -78,6 +78,36 @@
                                 <div>
                                     <span class="block text-[9px] font-black text-gray-500 uppercase tracking-widest">Kilometraje</span>
                                     <span class="text-sm font-mono text-gray-100">{{ number_format($vehicle->mileage, 0, '', '.') }} KM</span>
+                                </div>
+                                <div class="text-right mr-4">
+                                     <span class="block text-[9px] font-black text-gray-500 uppercase tracking-widest">Eficiencia</span>
+                                    @if($vehicle->average_efficiency)
+                                        <span class="text-sm font-bold text-blue-400">{{ number_format($vehicle->average_efficiency, 1, ',', '.') }} km/L</span>
+                                    @else
+                                        <span class="text-xs text-gray-600 italic">--</span>
+                                    @endif
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between pt-2 mt-2 border-t border-gray-700/30">
+                                <div>
+                                    <span class="block text-[9px] font-black text-gray-500 uppercase tracking-widest">Costo/Km</span>
+                                    @if($vehicle->cost_per_km)
+                                        <span class="text-xs font-bold text-gray-300">${{ number_format($vehicle->cost_per_km, 0, '', '.') }}</span>
+                                    @else
+                                        <span class="text-[10px] text-gray-600 italic">--</span>
+                                    @endif
+                                </div>
+                                <div class="text-right mr-4">
+                                    <span class="block text-[9px] font-black text-gray-500 uppercase tracking-widest">Mantención en</span>
+                                    @php $dist = $vehicle->maintenance_remaining_km; @endphp
+                                    @if($dist !== null)
+                                        <span class="text-xs font-bold {{ $dist < 0 ? 'text-red-500' : ($dist < 1000 ? 'text-yellow-500' : 'text-emerald-400') }}">
+                                            {{ number_format($dist, 0, '', '.') }} km
+                                        </span>
+                                    @else
+                                        <span class="text-[10px] text-gray-600 italic">No Data</span>
+                                    @endif
                                 </div>
                                 <button @click="viewingVehicle = { 
                                     plate: '{{ $vehicle->plate }}', 

@@ -141,6 +141,123 @@
                             <x-input-error :messages="$errors->get('destination_type')" class="mt-2" />
                         </div>
 
+                        @if(Auth::user()->role === 'admin')
+                                                <div x-data="{ isThirdParty: false, conductorDropdown: false, selectedConductorId: '', conductors: {{ $conductors->map(function ($conductor) {
+                                return [
+                                    'id' => $conductor->id,
+                                    'label' => $conductor->nombre . ' (' . ($conductor->cargo ?? 'N/A') . ')',
+                                    'image' => $conductor->fotografia ? asset('storage/' . $conductor->fotografia) : null,
+                                ];
+                            })->toJson() }},
+                                                        get selectedConductor() {
+                                                            return this.conductors.find(c => c.id == this.selectedConductorId) || null;
+                                                        }
+                                                    }" class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                                                    <label class="inline-flex items-center cursor-pointer">
+                                                        <input type="checkbox" name="is_third_party" x-model="isThirdParty" value="1"
+                                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400 font-bold">Esta solicitud es
+                                                            para un tercero (Conductor externo)</span>
+                                                    </label>
+
+                                                    <div x-show="isThirdParty" class="mt-4 animate-fade-in-down">
+                                                        <div class="relative">
+                                                            <x-input-label for="conductor_id" :value="__('Seleccionar Conductor')"
+                                                                class="mb-1" />
+
+                                                            <!-- Hidden Input -->
+                                                            <input type="hidden" name="conductor_id" :value="selectedConductorId">
+
+                                                            <!-- Trigger Button -->
+                                                            <button @click="conductorDropdown = !conductorDropdown"
+                                                                @click.away="conductorDropdown = false" type="button"
+                                                                class="relative w-full cursor-default rounded-md bg-white dark:bg-gray-900 py-3 pl-3 pr-10 text-left text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                                                                aria-haspopup="listbox" :aria-expanded="conductorDropdown">
+                                                                <span class="flex items-center">
+                                                                    <!-- Selected Image -->
+                                                                    <template x-if="selectedConductor && selectedConductor.image">
+                                                                        <img :src="selectedConductor.image" alt=""
+                                                                            class="h-10 w-10 flex-shrink-0 rounded-full object-cover border border-gray-300 dark:border-gray-600">
+                                                                    </template>
+                                                                    <template x-if="selectedConductor && !selectedConductor.image">
+                                                                        <div
+                                                                            class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-300 dark:border-gray-600">
+                                                                            <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                                                                stroke="currentColor">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                                    stroke-width="2"
+                                                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                                            </svg>
+                                                                        </div>
+                                                                    </template>
+
+                                                                    <span class="ml-3 block truncate"
+                                                                        x-text="selectedConductor ? selectedConductor.label : '-- Seleccione un Conductor --'"></span>
+                                                                </span>
+                                                                <span
+                                                                    class="pointer-events-none absolute inset-y-0 right-0 ml-3 flex items-center pr-2">
+                                                                    <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"
+                                                                        aria-hidden="true">
+                                                                        <path fill-rule="evenodd"
+                                                                            d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                                                                            clip-rule="evenodd" />
+                                                                    </svg>
+                                                                </span>
+                                                            </button>
+
+                                                            <!-- Dropdown List -->
+                                                            <ul x-show="conductorDropdown" x-transition:leave="transition ease-in duration-100"
+                                                                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                                                class="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+                                                                tabindex="-1" role="listbox">
+
+                                                                <template x-for="conductor in conductors" :key="conductor.id">
+                                                                    <li class="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-100 hover:bg-indigo-600 hover:text-white"
+                                                                        role="option"
+                                                                        @click="selectedConductorId = conductor.id; conductorDropdown = false">
+                                                                        <div class="flex items-center">
+                                                                            <!-- Option Image -->
+                                                                            <template x-if="conductor.image">
+                                                                                <img :src="conductor.image" alt=""
+                                                                                    class="h-12 w-12 flex-shrink-0 rounded-full object-cover border border-gray-200 dark:border-gray-600">
+                                                                            </template>
+                                                                            <template x-if="!conductor.image">
+                                                                                <div
+                                                                                    class="h-12 w-12 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center border border-gray-200 dark:border-gray-600">
+                                                                                    <svg class="h-6 w-6 text-gray-400" fill="none"
+                                                                                        viewBox="0 0 24 24" stroke="currentColor">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                                                            stroke-width="2"
+                                                                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                                                    </svg>
+                                                                                </div>
+                                                                            </template>
+
+                                                                            <!-- Option Text -->
+                                                                            <span class="ml-3 block font-normal truncate"
+                                                                                x-text="conductor.label"
+                                                                                :class="{ 'font-semibold': selectedConductorId == conductor.id, 'font-normal': selectedConductorId != conductor.id }">
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <!-- Checkmark for selected item -->
+                                                                        <span x-show="selectedConductorId == conductor.id"
+                                                                            class="absolute inset-y-0 right-0 flex items-center pr-4 text-indigo-600 hover:text-white">
+                                                                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+                                                                                aria-hidden="true">
+                                                                                <path fill-rule="evenodd"
+                                                                                    d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                                                                                    clip-rule="evenodd" />
+                                                                            </svg>
+                                                                        </span>
+                                                                    </li>
+                                                                </template>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                        @endif
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="start_date" :value="__('Fecha y Hora Inicio')" />

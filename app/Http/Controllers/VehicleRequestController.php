@@ -16,7 +16,11 @@ class VehicleRequestController extends Controller
      */
     public function index()
     {
-        $requests = VehicleRequest::with('vehicle')
+        $requests = VehicleRequest::with([
+            'vehicle' => function ($query) {
+                $query->withTrashed();
+            }
+        ])
             ->where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
             ->get();
@@ -46,7 +50,10 @@ class VehicleRequestController extends Controller
         $vehicles = Vehicle::all()->filter(function ($vehicle) {
             return $vehicle->display_status === 'available';
         });
-        return view('requests.create', compact('vehicles'));
+
+        $conductors = ($user->role === 'admin') ? \App\Models\Conductor::all() : collect([]);
+
+        return view('requests.create', compact('vehicles', 'conductors'));
     }
 
     /**
@@ -80,6 +87,7 @@ class VehicleRequestController extends Controller
             'end_date' => $request->end_date,
             'status' => 'pending',
             'destination_type' => $request->destination_type,
+            'conductor_id' => ($user->role === 'admin' && $request->has('is_third_party') && $request->conductor_id) ? $request->conductor_id : null,
         ]);
 
         return redirect()->route('requests.create')->with('success', 'Solicitud enviada correctamente. Esperando aprobación.');

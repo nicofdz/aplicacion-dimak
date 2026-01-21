@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::post('maintenance/requests/{id}/accept', [MaintenanceController::class, 'acceptRequest'])->name('maintenance.requests.accept');
 
     // Trigger manual de alertas (Solo para pruebas/demo)
+    // Trigger manual de alertas (Solo para pruebas/demo)
     Route::get('/maintenance/check', function (\App\Services\MaintenanceService $service) {
         $service->checkAndNotify();
         return redirect()->back()->with('success', 'Chequeo de alertas ejecutado.');
@@ -86,10 +87,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/requests/{id}/complete', [VehicleRequestController::class, 'complete'])->name('requests.complete');
 
     // Historial de Devoluciones (Admin)
+    Route::get('/admin/returns/trash', [VehicleReturnController::class, 'trash'])->name('admin.returns.trash');
+    Route::put('/admin/returns/{id}/restore', [VehicleReturnController::class, 'restore'])->name('admin.returns.restore');
+    Route::delete('/admin/returns/{id}/force-delete', [VehicleReturnController::class, 'forceDelete'])->name('admin.returns.force-delete');
+    Route::delete('/admin/returns/{id}', [VehicleReturnController::class, 'destroy'])->name('admin.returns.destroy');
     Route::get('/admin/returns', [VehicleReturnController::class, 'index'])->name('admin.returns.index');
+    Route::get('/fuel-loads', [App\Http\Controllers\FuelLoadController::class, 'index'])->name('fuel-loads.index');
+    Route::post('/fuel-loads', [App\Http\Controllers\FuelLoadController::class, 'store'])->name('fuel-loads.store');
 
     // Notificaciones
     Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'read'])->name('notifications.read');
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::post('/notifications/mark-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAll');
 
     

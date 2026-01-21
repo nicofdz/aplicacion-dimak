@@ -19,7 +19,24 @@ class VehicleController extends Controller
      */
     public function index(Request $request)
     {
-        $vehicles = Vehicle::all();
+        $query = Vehicle::query();
+
+        // Filtro de Búsqueda (Patente, Marca o Modelo)
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('plate', 'like', "%{$search}%")
+                    ->orWhere('brand', 'like', "%{$search}%")
+                    ->orWhere('model', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtro de Estado
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $vehicles = $query->get();
 
         // Estados
         $countDisponible = Vehicle::where('status', 'available')->count();
@@ -34,7 +51,7 @@ class VehicleController extends Controller
             ->get();
 
 
-        $pendingReservations = VehicleRequest::with(['vehicle', 'user'])
+        $pendingReservations = VehicleRequest::with(['vehicle', 'user', 'conductor'])
             ->where('status', 'pending')
             ->latest()
             ->get();
@@ -86,6 +103,7 @@ class VehicleController extends Controller
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'mileage' => 'required|integer|min:0',
             'image' => 'nullable|image|max:2048', // Máx 2MB
+            'fuel_type' => 'required|in:gasoline,diesel',
 
             // Documentos
             'soap_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
@@ -167,6 +185,7 @@ class VehicleController extends Controller
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'mileage' => 'required|integer|min:0',
             'image' => 'nullable|image|max:2048',
+            'fuel_type' => 'required|in:gasoline,diesel',
 
             // Docs validation
             'soap_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
@@ -178,6 +197,11 @@ class VehicleController extends Controller
         ]);
 
         $data = $request->except(['image', 'soap_file', 'soap_expires_at', 'permit_file', 'permit_expires_at', 'technical_file', 'technical_expires_at']);
+
+        // Prevent status change if vehicle is occupied
+        if ($vehicle->status === 'occupied' && isset($data['status']) && $data['status'] !== 'occupied') {
+            return back()->withErrors(['status' => 'No se puede modificar el estado de un vehículo que se encuentra en uso.']);
+        }
 
         if ($request->hasFile('image')) {
             // Eliminar imagen antigua si existe
