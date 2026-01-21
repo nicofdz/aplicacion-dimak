@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Conductor; 
+use App\Models\Conductor;
 use Illuminate\Http\Request;
 
 class ConductorController extends Controller
@@ -11,8 +11,8 @@ class ConductorController extends Controller
     {
         //todos los conductores de la base de datos
         $conductores = Conductor::all();
-        
-        
+
+
         return view('conductores.index', compact('conductores'));
     }
 
@@ -25,11 +25,12 @@ class ConductorController extends Controller
     {
         // validar datos
         $request->validate([
-            'nombre'         => 'required|string|max:255',
-            'cargo'          => 'required|string|max:255',
-            'departamento'   => 'required|string|max:255',
+            'nombre' => 'required|string|max:255',
+            'rut' => 'nullable|string|max:12|unique:conductores,rut',
+            'cargo' => 'required|string|max:255',
+            'departamento' => 'required|string|max:255',
             'fecha_licencia' => 'required|date',
-            'fotografia'     => 'nullable|image|mimes:jpg,png,jpeg|max:2048', // Máximo 2MB
+            'fotografia' => 'nullable|image|mimes:jpg,png,jpeg|max:2048', // Máximo 2MB
         ]);
         $conductor = new Conductor($request->except('fotografia'));
 
@@ -38,13 +39,13 @@ class ConductorController extends Controller
             $rutaFoto = $request->file('fotografia')->store('conductores', 'public');
             $conductor->fotografia = $rutaFoto;
         }
-        
+
         // guardar datos 
         $conductor->save();
         return redirect()->route('conductores.index')->with('success', 'Conductor creado correctamente.');
     }
 
-        // Muestra el formulario con los datos cargados
+    // Muestra el formulario con los datos cargados
     public function edit(Conductor $conductor)
     {
         return view('conductores.edit', compact('conductor'));
@@ -55,6 +56,7 @@ class ConductorController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:255',
+            'rut' => 'nullable|string|max:12|unique:conductores,rut,' . $conductor->id,
             'cargo' => 'required|string|max:255',
             'departamento' => 'required|string|max:255',
             'fecha_licencia' => 'required|date',
@@ -85,7 +87,7 @@ class ConductorController extends Controller
 
     public function restore($id)
     {
-        
+
         $conductor = Conductor::withTrashed()->findOrFail($id);
         $conductor->restore();
 
@@ -98,6 +100,6 @@ class ConductorController extends Controller
 
         return redirect()->route('conductores.trash')->with('success', 'Conductor eliminado permanentemente.');
     }
-    
+
 
 }

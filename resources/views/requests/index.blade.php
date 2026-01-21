@@ -8,7 +8,8 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100" x-data="{ showConfirmModal: false, returnUrl: '' }">
+                <div class="p-6 text-gray-900 dark:text-gray-100"
+                    x-data="{ returnUrl: '', fuelRequestId: '', fuelVehicleId: '', fuelType: '' }">
 
 
 
@@ -39,8 +40,13 @@
                                         <tr>
                                             <td
                                                 class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                {{ $request->vehicle->brand }} {{ $request->vehicle->model }}
-                                                ({{ $request->vehicle->plate }})
+                                                @if($request->vehicle)
+                                                    {{ $request->vehicle->brand }} {{ $request->vehicle->model }}
+                                                    <span
+                                                        class="text-xs text-gray-500 block">({{ $request->vehicle->plate }})</span>
+                                                @else
+                                                    <span class="text-red-500 italic">Vehículo Eliminado</span>
+                                                @endif
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {{ $request->start_date->format('d/m/Y H:i') }}
@@ -70,11 +76,23 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 @if($request->status === 'approved')
-                                                    <button
-                                                        @click="showConfirmModal = true; returnUrl = '{{ route('requests.complete', $request->id) }}'"
-                                                        class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold">
-                                                        Devolver / Finalizar
-                                                    </button>
+                                                    <div class="flex flex-col space-y-2 text-right">
+                                                        @if($request->vehicle)
+                                                            <button
+                                                                @click="fuelRequestId = '{{ $request->id }}'; fuelVehicleId = '{{ $request->vehicle_id }}'; fuelType = '{{ $request->vehicle->fuel_type }}'; $dispatch('open-modal', 'fuel-load-modal')"
+                                                                class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 font-bold text-xs uppercase">
+                                                                ⛽ Cargar Combustible
+                                                            </button>
+                                                            <button
+                                                                @click="returnUrl = '{{ route('requests.complete', $request->id) }}'; $dispatch('open-modal', 'confirm-return-modal')"
+                                                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold text-xs uppercase">
+                                                                Devolver / Finalizar
+                                                            </button>
+                                                        @else
+                                                            <span class="text-xs text-red-500 font-bold uppercase">Vehículo No
+                                                                Disponible</span>
+                                                        @endif
+                                                    </div>
                                                 @endif
                                             </td>
                                         </tr>
@@ -87,10 +105,8 @@
                     @endif
 
                     <!-- Modal de Confirmación -->
-                    <div x-show="showConfirmModal"
-                        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-                        style="display: none;" x-transition>
-                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-2xl">
+                    <x-modal name="confirm-return-modal" :show="false" focusable>
+                        <div class="p-6 bg-white dark:bg-gray-800 rounded-lg">
                             <h3
                                 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 border-b pb-2 dark:border-gray-700">
                                 Check-in de Devolución
@@ -194,7 +210,7 @@
                                 </div>
 
                                 <div class="flex justify-end space-x-4 border-t pt-4 dark:border-gray-700">
-                                    <button type="button" @click="showConfirmModal = false"
+                                    <button type="button" @click="$dispatch('close')"
                                         class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-600">
                                         Cancelar
                                     </button>
@@ -205,7 +221,101 @@
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </x-modal>
+
+                    <!-- Modal Carga Combustible -->
+                    <x-modal name="fuel-load-modal" :show="false" focusable>
+                        <div class="p-6 bg-white dark:bg-gray-800 rounded-lg">
+                            <h3
+                                class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 border-b pb-2 dark:border-gray-700">
+                                Registrar Carga de Combustible ⛽
+                            </h3>
+
+                            <div class="mb-4 p-4 rounded-md border-2 text-center" :class="{
+                                    'bg-yellow-900/30 border-yellow-500 text-yellow-500': fuelType === 'diesel',
+                                    'bg-green-900/30 border-green-500 text-green-500': fuelType === 'gasoline',
+                                    'bg-gray-700 border-gray-500 text-gray-300': !fuelType || (fuelType !== 'diesel' && fuelType !== 'gasoline')
+                                }">
+                                <span class="block text-xs uppercase tracking-widest font-bold text-gray-400">Tipo de
+                                    Combustible Requerido</span>
+                                <span class="text-2xl font-black uppercase"
+                                    x-text="fuelType === 'diesel' ? 'PETRÓLEO (DIESEL)' : (fuelType === 'gasoline' ? 'BENCINA (GASOLINA)' : 'CONSULTAR MANUAL')"></span>
+                                <span class="block text-xs mt-1 text-white font-bold" x-show="fuelType">⚠️ Verifique
+                                    antes de
+                                    cargar</span>
+                            </div>
+
+                            <form action="{{ route('fuel-loads.store') }}" method="POST" enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="vehicle_request_id" :value="fuelRequestId">
+                                <input type="hidden" name="vehicle_id" :value="fuelVehicleId">
+                                <input type="hidden" name="date" value="{{ now()->format('Y-m-d H:i') }}"> {{-- Default
+                                to now --}}
+
+                                <div class="space-y-4">
+                                    <!-- Fecha (Editable) -->
+                                    <div>
+                                        <x-input-label for="fuel_date" :value="__('Fecha y Hora')" />
+                                        <x-text-input id="fuel_date" type="datetime-local" name="date" required
+                                            class="block mt-1 w-full" value="{{ now()->format('Y-m-d\TH:i') }}" />
+                                    </div>
+
+                                    <!-- Kilometraje -->
+                                    <div>
+                                        <x-input-label for="fuel_mileage" :value="__('Kilometraje Actual (Odometer)')" />
+                                        <x-text-input id="fuel_mileage" type="number" name="mileage" required
+                                            class="block mt-1 w-full" placeholder="Ej: 45200" />
+                                        <span class="text-xs text-gray-500">Debe ser mayor o igual al último
+                                            registrado.</span>
+                                    </div>
+
+                                    <!-- Litros y Precio -->
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <x-input-label for="fuel_liters" :value="__('Litros')" />
+                                            <x-text-input id="fuel_liters" type="number" step="0.01" name="liters"
+                                                required class="block mt-1 w-full" placeholder="Ej: 40.5" x-data="{}"
+                                                @input="$refs.total.innerText = '$' + Math.round(($el.value || 0) * (document.getElementById('fuel_price').value || 0))" />
+                                        </div>
+                                        <div>
+                                            <x-input-label for="fuel_price" :value="__('Precio por Litro')" />
+                                            <x-text-input id="fuel_price" type="number" name="price_per_liter" required
+                                                class="block mt-1 w-full" placeholder="Ej: 1350"
+                                                @input="$refs.total.innerText = '$' + Math.round(($el.value || 0) * (document.getElementById('fuel_liters').value || 0))" />
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded text-center">
+                                        <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Costo Total
+                                            Estimado:</span>
+                                        <div class="text-2xl font-bold text-green-600" x-ref="total">$0</div>
+                                    </div>
+
+                                    <!-- Foto Boleta -->
+                                    <div>
+                                        <x-input-label for="fuel_photo" :value="__('Foto Boleta / Recibo')" />
+                                        <input type="file" id="fuel_photo" name="receipt_photo" accept="image/*"
+                                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-gray-700 dark:file:text-gray-300" />
+                                    </div>
+
+                                    <!-- Nro Factura -->
+                                    <div>
+                                        <x-input-label for="invoice_number" :value="__('Nº Boleta/Factura (Opcional)')" />
+                                        <x-text-input id="invoice_number" type="text" name="invoice_number"
+                                            class="block mt-1 w-full" />
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end space-x-4 border-t pt-4 mt-6 dark:border-gray-700">
+                                    <button type="button" @click="$dispatch('close')"
+                                        class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-600">Cancelar</button>
+                                    <button type="submit"
+                                        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-500 font-bold">Registrar
+                                        Carga</button>
+                                </div>
+                            </form>
+                        </div>
+                    </x-modal>
 
                 </div>
             </div>

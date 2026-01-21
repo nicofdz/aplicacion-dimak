@@ -24,4 +24,11 @@ class NotificationController extends Controller
         return back();
     }
 
+    public function destroy($id)
+    {
+        $notification = Auth::user()->notifications()->findOrFail($id);
+        $notification->delete();
+
+        return back()->with('success', 'Notificación eliminada.');
+    }
 }

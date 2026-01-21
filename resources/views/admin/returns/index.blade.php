@@ -1,12 +1,20 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Historial de Entregas') }}
-        </h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                {{ __('Historial de Entregas') }}
+            </h2>
+            <a href="{{ route('admin.returns.trash') }}" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                {{ __('Papelera') }}
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     
@@ -19,7 +27,7 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Vehículo</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Usuario</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado Entrega</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Detalles</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -30,7 +38,7 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                                                 <div class="flex items-center">
-                                                    @if($return->request->vehicle->image_path)
+                                                    @if($return->request->vehicle && $return->request->vehicle->image_path)
                                                         <div class="flex-shrink-0 h-10 w-10">
                                                             <img class="h-10 w-10 rounded-full object-cover" 
                                                                  src="{{ Storage::url($return->request->vehicle->image_path) }}" 
@@ -45,10 +53,15 @@
                                                     @endif
                                                     <div class="ml-4">
                                                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                            {{ $return->request->vehicle->brand }} {{ $return->request->vehicle->model }}
+                                                            @if($return->request->vehicle)
+                                                                {{ $return->request->vehicle->brand }} {{ $return->request->vehicle->model }}
+                                                            @else
+                                                                <span class="text-red-500 italic">Vehículo Eliminado</span>
+                                                            @endif
                                                         </div>
-                                                        <div class="text-sm text-gray-500">
-                                                            {{ $return->request->vehicle->plate }}
+                                                            @if($return->request->vehicle)
+                                                                {{ $return->request->vehicle->plate }}
+                                                            @endif
                                                         </div>
                                                     </div>
                                                 </div>
@@ -85,7 +98,6 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div x-data="{ 
-                                                    open: false, 
                                                     carouselOpen: false, 
                                                     images: [], 
                                                     currentImage: '', 
@@ -105,83 +117,115 @@
                                                         this.currentImage = this.images[this.currentIndex];
                                                     }
                                                 }">
-                                                    <button @click="open = true" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400">Ver Ficha</button>
+                                                    <div class="flex justify-end items-center space-x-2">
+                                                        <button @click="$dispatch('open-modal', 'view-return-{{ $return->id }}')" 
+                                                                class="p-2 text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors" 
+                                                                title="Ver Ficha">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                            </svg>
+                                                        </button>
+                                                        
+                                                        <button @click="$dispatch('open-modal', 'delete-return-modal-{{ $return->id }}')" 
+                                                                class="p-2 text-red-600 hover:text-red-900 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" 
+                                                                title="Eliminar">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+
+                                                    <!-- Modal Confirm Delete -->
+                                                    <!-- Modal Confirm Delete -->
+                                                    <template x-teleport="body">
+                                                        <x-modal name="delete-return-modal-{{ $return->id }}" :show="false" focusable>
+                                                            <form method="POST" action="{{ route('admin.returns.destroy', $return->id) }}" class="p-6">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                                                    {{ __('¿Mover a la papelera?') }}
+                                                                </h2>
+                                                                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 whitespace-normal">
+                                                                    {{ __('La entrega se moverá a la papelera de reciclaje. Podrás restaurarla o eliminarla permanentemente desde allí.') }}
+                                                                </p>
+                                                                <div class="mt-6 flex justify-end">
+                                                                    <x-secondary-button x-on:click="$dispatch('close')">
+                                                                        {{ __('Cancelar') }}
+                                                                    </x-secondary-button>
+                                                                    <x-danger-button class="ml-3">
+                                                                        {{ __('Mover a Papelera') }}
+                                                                    </x-danger-button>
+                                                                </div>
+                                                            </form>
+                                                        </x-modal>
+                                                    </template>
 
                                                     <!-- Modal Detalle -->
                                                     <template x-teleport="body">
-                                                        <div x-show="open" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" x-transition>
-                                                            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                                                                <div class="fixed inset-0 transition-opacity" aria-hidden="true" @click="open = false">
-                                                                    <div class="absolute inset-0 bg-black bg-opacity-60"></div>
-                                                                </div>
-
-                                                                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-                                                                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full relative z-50">
-                                                                    <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                                                        <div class="sm:flex sm:items-start">
-                                                                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                                                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4" id="modal-title">
-                                                                                    Detalle de Entrega #{{ $return->id }}
-                                                                                </h3>
-                                                                                
-                                                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 dark:text-gray-300">
-                                                                                    <div>
-                                                                                        <h4 class="font-bold mb-2">Vehículo</h4>
-                                                                                        <p>Modelo: {{ $return->request->vehicle->brand }} {{ $return->request->vehicle->model }}</p>
-                                                                                        <p>Patente: {{ $return->request->vehicle->plate }}</p>
-                                                                                        <p>Kms Devolución: {{ number_format($return->return_mileage, 0, '', '.') }} km</p>
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <h4 class="font-bold mb-2">Estado Reportado</h4>
-                                                                                        @php
-                                                                                            $tireMap = ['good' => 'Bueno', 'fair' => 'Regular', 'poor' => 'Malo'];
-                                                                                            $cleanMap = ['clean' => 'Limpio', 'dirty' => 'Sucio', 'very_dirty' => 'Muy Sucio'];
-                                                                                        @endphp
-                                                                                        <ul class="list-disc pl-5 space-y-1">
-                                                                                            <li>Combustible: {{ $return->fuel_level }}</li>
-                                                                                            <li>Neum. Delanteros: {{ $tireMap[$return->tire_status_front] ?? $return->tire_status_front }}</li>
-                                                                                            <li>Neum. Traseros: {{ $tireMap[$return->tire_status_rear] ?? $return->tire_status_rear }}</li>
-                                                                                            <li>Limpieza: {{ $cleanMap[$return->cleanliness] ?? $return->cleanliness }}</li>
-                                                                                            <li>Daños: {{ $return->body_damage_reported ? 'SÍ' : 'No' }}</li>
-                                                                                        </ul>
-                                                                                    </div>
-                                                                                    
-                                                                                    <div class="col-span-2 mt-4">
-                                                                                        <h4 class="font-bold mb-2">Comentarios</h4>
-                                                                                        <p class="bg-gray-100 dark:bg-gray-700 p-2 rounded">{{ $return->comments ?: 'Sin comentarios' }}</p>
-                                                                                    </div>
-
-                                                                                    @if($return->photos_paths && count($return->photos_paths) > 0)
-                                                                                        <div class="col-span-2 mt-4">
-                                                                                            <h4 class="font-bold mb-2">Fotos Adjuntas</h4>
-                                                                                            @php
-                                                                                                $gallery = collect($return->photos_paths)->map(fn($p) => Storage::url($p))->values();
-                                                                                            @endphp
-                                                                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                                                                                @foreach($gallery as $index => $photoUrl)
-                                                                                                    <button @click="openCarousel({{ $gallery->toJson() }}, {{ $index }})" class="block group relative w-full h-24 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded">
-                                                                                                        <img src="{{ $photoUrl }}" class="w-full h-full object-cover rounded border hover:opacity-75 transition" alt="Foto Entrega">
-                                                                                                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                                                                                                            <svg class="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
-                                                                                                        </div>
-                                                                                                    </button>
-                                                                                                @endforeach
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    @endif
-                                                                                </div>
+                                                        <x-modal name="view-return-{{ $return->id }}" :show="false" focusable maxWidth="3xl">
+                                                            <div class="p-6 bg-white dark:bg-gray-800 rounded-lg">
+                                                                <div class="sm:flex sm:items-start">
+                                                                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                                                        <h3 class="text-lg leading-6 font-bold text-gray-900 dark:text-gray-100 mb-4 border-b pb-2 dark:border-gray-700" id="modal-title-{{ $return->id }}">
+                                                                            Detalle de Entrega #{{ $return->id }}
+                                                                        </h3>
+                                                                        
+                                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 dark:text-gray-300">
+                                                                            <div>
+                                                                                <h4 class="font-bold mb-2">Vehículo</h4>
+                                                                                <p>Modelo: {{ $return->request->vehicle->brand }} {{ $return->request->vehicle->model }}</p>
+                                                                                <p>Patente: {{ $return->request->vehicle->plate }}</p>
+                                                                                <p>Kms Devolución: {{ number_format($return->return_mileage, 0, '', '.') }} km</p>
                                                                             </div>
+                                                                            <div>
+                                                                                <h4 class="font-bold mb-2">Estado Reportado</h4>
+                                                                                @php
+                                                                                    $tireMap = ['good' => 'Bueno', 'fair' => 'Regular', 'poor' => 'Malo'];
+                                                                                    $cleanMap = ['clean' => 'Limpio', 'dirty' => 'Sucio', 'very_dirty' => 'Muy Sucio'];
+                                                                                @endphp
+                                                                                <ul class="list-disc pl-5 space-y-1">
+                                                                                    <li>Combustible: {{ $return->fuel_level }}</li>
+                                                                                    <li>Neum. Delanteros: {{ $tireMap[$return->tire_status_front] ?? $return->tire_status_front }}</li>
+                                                                                    <li>Neum. Traseros: {{ $tireMap[$return->tire_status_rear] ?? $return->tire_status_rear }}</li>
+                                                                                    <li>Limpieza: {{ $cleanMap[$return->cleanliness] ?? $return->cleanliness }}</li>
+                                                                                    <li>Daños: {{ $return->body_damage_reported ? 'SÍ' : 'No' }}</li>
+                                                                                </ul>
+                                                                            </div>
+                                                                            
+                                                                            <div class="col-span-2 mt-4">
+                                                                                <h4 class="font-bold mb-2">Comentarios</h4>
+                                                                                <p class="bg-gray-100 dark:bg-gray-700 p-2 rounded">{{ $return->comments ?: 'Sin comentarios' }}</p>
+                                                                            </div>
+
+                                                                            @if($return->photos_paths && count($return->photos_paths) > 0)
+                                                                                <div class="col-span-2 mt-4">
+                                                                                    <h4 class="font-bold mb-2">Fotos Adjuntas</h4>
+                                                                                    @php
+                                                                                        $gallery = collect($return->photos_paths)->map(fn($p) => Storage::url($p))->values();
+                                                                                    @endphp
+                                                                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                                                                        @foreach($gallery as $index => $photoUrl)
+                                                                                            <button @click="openCarousel({{ $gallery->toJson() }}, {{ $index }})" class="block group relative w-full h-24 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded">
+                                                                                                <img src="{{ $photoUrl }}" class="w-full h-full object-cover rounded border hover:opacity-75 transition" alt="Foto Entrega">
+                                                                                                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                                                                                                    <svg class="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                                                                                                </div>
+                                                                                            </button>
+                                                                                        @endforeach
+                                                                                    </div>
+                                                                                </div>
+                                                                            @endif
                                                                         </div>
                                                                     </div>
-                                                                    <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                                                        <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" @click="open = false">
-                                                                            Cerrar
-                                                                        </button>
-                                                                    </div>
+                                                                </div>
+
+                                                                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse -mx-6 -mb-6 mt-6 rounded-b-lg">
+                                                                    <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" @click="$dispatch('close')">
+                                                                        Cerrar
+                                                                    </button>
                                                                 </div>
                                                             </div>
-                                                        </div>
+                                                        </x-modal>
                                                     </template>
 
                                                     <!-- Modal Carousel (Lightbox) -->

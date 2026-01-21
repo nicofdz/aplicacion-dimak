@@ -1,10 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 {{ __('Gestión de Vehículos') }}
             </h2>
-            <div class="flex space-x-2">
+            <div class="flex flex-wrap gap-2 items-center">
+                
+                <!-- Search Button (Mobile) / Input (Desktop) are handled in the table section layout to be cleaner -->
+                
                 <a href="{{ route('vehicles.trash') }}"
                     class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,23 +41,160 @@
                 <!-- Botón Agregar Vehículo -->
                 <button x-data="" @click="$dispatch('open-modal', 'create-vehicle-modal')"
                     class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                    + {{ __('Nuevo Vehículo') }}
+                    + {{ __('Nuevo') }}
                 </button>
             </div>
         </div>
     </x-slot>
 
     <div class="py-12"
-        x-data="{ openModal: {{ $errors->any() ? 'true' : 'false' }}, deleteAction: '', editingVehicle: {}, editAction: '', viewingVehicle: {}, maintenanceVehicle: {}, viewingUser: null }">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-12"
+        x-data="{ 
+            openModal: {{ $errors->any() ? 'true' : 'false' }}, 
+            deleteAction: '', 
+            editingVehicle: {}, 
+            editAction: '', 
+            viewingVehicle: {}, 
+            maintenanceVehicle: {}, 
+            viewingUser: null,
+            filtersOpen: false,
+            searchQuery: '{{ request('search', '') }}',
+            getDaysRemaining(dateStr) {
+                if (!dateStr) return null;
+                // Crear fechas en zona horaria local para evitar errores de dia anterior
+                const parts = dateStr.split('T')[0].split('-'); // Asegurar remover parte de tiempo
+                const target = new Date(parts[0], parts[1] - 1, parts[2]); 
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const diff = target - today;
+                return Math.ceil(diff / (1000 * 60 * 60 * 24));
+            },
+            hasExpiredDocs(documents) {
+                if (!documents || !Array.isArray(documents)) return false;
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                return documents.some(doc => {
+                    if (!doc.expires_at) return false;
+                    const parts = doc.expires_at.split('T')[0].split('-');
+                    const target = new Date(parts[0], parts[1] - 1, parts[2]);
+                    return target < today;
+                });
+            }
+        }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
 
+
+            <div class="mb-6 flex flex-col sm:flex-row gap-4 items-center">
+                <div class="relative w-full sm:max-w-md">
+                    <input type="text" x-model="searchQuery"
+                        placeholder="Buscar por patente, marca o modelo..."
+                        class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-indigo-500 transition-shadow">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button type="button" @click="filtersOpen = true" 
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-bold text-sm transition-colors flex items-center gap-2 border border-gray-300 dark:border-gray-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                        Filtros
+                        @if(request('status'))
+                            <span class="bg-indigo-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">1</span>
+                        @endif
+                    </button>
+                    
+                    <template x-if="searchQuery || '{{ request('status') }}'">
+                        <a href="{{ route('vehicles.index') }}" class="px-3 py-2 text-gray-500 hover:text-red-500 transition-colors" title="Limpiar Filtros">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </a>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Filter Sidebar (Off-canvas) -->
+            <div x-show="filtersOpen" class="fixed inset-0 z-50 flex justify-end" style="display: none;">
+                <!-- Backdrop -->
+                <div @click="filtersOpen = false" 
+                    x-show="filtersOpen"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-300"
+                    x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+                <!-- Sidebar Content -->
+                <div x-show="filtersOpen"
+                    x-transition:enter="transition transform ease-out duration-300"
+                    x-transition:enter-start="translate-x-full"
+                    x-transition:enter-end="translate-x-0"
+                    x-transition:leave="transition transform ease-in duration-300"
+                    x-transition:leave-start="translate-x-0"
+                    x-transition:leave-end="translate-x-full"
+                    class="relative w-80 bg-white dark:bg-gray-800 h-full shadow-2xl p-6 overflow-y-auto border-l border-gray-700">
+                    
+                    <div class="flex justify-between items-center mb-8">
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                            Filtros
+                        </h3>
+                        <button @click="filtersOpen = false" class="text-gray-400 hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <form method="GET" action="{{ route('vehicles.index') }}">
+                        <input type="hidden" name="search" :value="searchQuery">
+
+                        <!-- Filter: Status -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Estado</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('status') === 'available' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                    <input type="radio" name="status" value="available" class="hidden" {{ request('status') === 'available' ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <span class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
+                                    <span class="text-gray-200">Disponible</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('status') === 'occupied' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                    <input type="radio" name="status" value="occupied" class="hidden" {{ request('status') === 'occupied' ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <span class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
+                                    <span class="text-gray-200">Reservado</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('status') === 'maintenance' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                    <input type="radio" name="status" value="maintenance" class="hidden" {{ request('status') === 'maintenance' ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <span class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"></span>
+                                    <span class="text-gray-200">Mantenimiento</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('status') === 'out_of_service' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                    <input type="radio" name="status" value="out_of_service" class="hidden" {{ request('status') === 'out_of_service' ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <span class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
+                                    <span class="text-gray-200">Fuera de Servicio</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-gray-700 flex flex-col gap-3">
+                            <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/30">
+                                Aplicar Filtros
+                            </button>
+                            @if(request('status'))
+                                <a href="{{ route('vehicles.index', ['search' => request('search')]) }}" class="w-full py-3 text-center text-gray-400 hover:text-white font-medium hover:bg-gray-700 rounded-lg transition-colors">
+                                    Limpiar Estado
+                                </a>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
 
             <div
                 class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-gray-200 dark:border-gray-700">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-
-
 
                     <div class="overflow-x-auto">
                         <table class="min-w-full leading-normal">
@@ -76,6 +216,9 @@
                                         Estado
                                     </th>
                                     <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                                        Estado Doc.
+                                    </th>
+                                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                                         Kilometraje
                                     </th>
                                     <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider">
@@ -85,7 +228,9 @@
                             </thead>
                             <tbody class="divide-y divide-gray-700 bg-gray-900 text-gray-300">
                                 @forelse($vehicles as $vehicle)
-                                    <tr class="hover:bg-gray-800 transition duration-150">
+                                    <tr class="hover:bg-gray-800 transition duration-150"
+                                        data-search="{{ strtolower($vehicle->plate . ' ' . $vehicle->brand . ' ' . $vehicle->model) }}"
+                                        x-show="!searchQuery || $el.dataset.search.split(' ').some(word => word.startsWith(searchQuery.toLowerCase()))">
                                         <td class="px-5 py-4 text-sm">
                                             @if($vehicle->image_path)
                                                 <div class="h-10 w-10 flex-shrink-0">
@@ -117,14 +262,12 @@
                                                     'out_of_service' => 'text-red-400 bg-red-900/30 border border-red-900',
                                                     'maintenance' => 'text-yellow-400 bg-yellow-900/30 border border-yellow-900',
                                                     'occupied' => 'text-blue-400 bg-blue-900/30 border border-blue-900',
-                                                    'expired_documents' => 'text-red-500 bg-red-950 border border-red-500 font-bold',
                                                 ];
                                                 $statusLabel = [
                                                     'available' => 'DISPONIBLE',
                                                     'out_of_service' => 'FUERA DE SERVICIO',
                                                     'maintenance' => 'MANTENIMIENTO',
                                                     'occupied' => 'RESERVADO',
-                                                    'expired_documents' => 'DOC. VENCIDO',
                                                 ];
                                             @endphp
                                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md {{ $statusClasses[$displayStatus] ?? 'text-gray-400 bg-gray-800' }}">
@@ -134,6 +277,17 @@
                                                 <div class="text-[10px] text-blue-300 mt-1">
                                                     Por: {{ $vehicle->active_reservation->user->name }}
                                                 </div>
+                                            @endif
+                                        </td>
+                                        <td class="px-5 py-4 text-sm">
+                                            @if($vehicle->hasExpiredDocuments())
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md text-red-400 bg-red-900/30 border border-red-900">
+                                                    ATRASADO
+                                                </span>
+                                            @else
+                                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md text-green-400 bg-green-900/30 border border-green-900">
+                                                    AL DÍA
+                                                </span>
                                             @endif
                                         </td>
                                         <td class="px-5 py-4 text-sm">
@@ -179,6 +333,8 @@
                                                     'assigned_user' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->name : '',
                                                     'assigned_user_rut' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->rut : '',
                                                     'assigned_user_phone' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->phone : '',
+                                                    'assigned_user_phone' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->phone : '',
+                                                    'fuel_type' => $vehicle->fuel_type,
                                                 ];
                                                 $jsonVehicle = json_encode($jsVehicle);
                                             @endphp
@@ -227,6 +383,13 @@
                                                         </path>
                                                     </svg>
                                                 </button>
+                                                <a href="{{ route('fuel-loads.index', ['vehicle_id' => $vehicle->id]) }}"
+                                                    class="text-orange-500 hover:text-orange-400 transition duration-150"
+                                                    title="Historial de Combustible">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                                    </svg>
+                                                </a>
                                                 <button @click="
                                                     editingVehicle = {{ $jsonVehicle }};
                                                     editAction = '{{ route('vehicles.update', $vehicle->id) }}';
@@ -350,6 +513,17 @@
                             type="text" name="mileage" :value="old('mileage')" required placeholder="0" 
                             x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" />
                         <x-input-error :messages="$errors->get('mileage')" class="mt-2" />
+                    </div>
+
+                    <!-- Tipo de Combustible -->
+                    <div>
+                        <x-input-label for="fuel_type" :value="__('Tipo de Combustible')" class="text-gray-300" />
+                        <select id="fuel_type" name="fuel_type"
+                            class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm">
+                            <option value="diesel">Petróleo (Diesel)</option>
+                            <option value="gasoline">Bencina (Gasolina)</option>
+                        </select>
+                        <x-input-error :messages="$errors->get('fuel_type')" class="mt-2" />
                     </div>
 
                     <!-- Documentación Inicial -->
@@ -505,15 +679,43 @@
                         <x-input-error :messages="$errors->get('mileage')" class="mt-2" />
                     </div>
 
+                    <!-- Tipo de Combustible (Editar) -->
+                    <div>
+                        <x-input-label for="edit_fuel_type" :value="__('Tipo de Combustible')" class="text-gray-300" />
+                        <select id="edit_fuel_type" name="fuel_type" x-model="editingVehicle.fuel_type"
+                            class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm">
+                            <option value="diesel">Petróleo (Diesel)</option>
+                            <option value="gasoline">Bencina (Gasolina)</option>
+                        </select>
+                        <x-input-error :messages="$errors->get('fuel_type')" class="mt-2" />
+                    </div>
+
                     <!-- Estado -->
                     <div class="md:col-span-2">
                         <x-input-label for="edit_status" :value="__('Estado')" class="text-gray-300" />
-                        <select id="edit_status" name="status" x-model="editingVehicle.status"
-                            class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm">
-                            <option value="available">{{ __('Disponible') }}</option>
-                            <option value="out_of_service">{{ __('Fuera de Servicio') }}</option>
-                            <option value="maintenance">{{ __('En Mantenimiento') }}</option>
-                        </select>
+                        <template x-if="editingVehicle.status !== 'occupied'">
+                            <select id="edit_status" name="status" x-model="editingVehicle.status"
+                                class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm">
+                                <option value="available">{{ __('Disponible') }}</option>
+                                <option value="out_of_service">{{ __('Fuera de Servicio') }}</option>
+                                <option value="maintenance">{{ __('En Mantenimiento') }}</option>
+                            </select>
+                        </template>
+                        <template x-if="editingVehicle.status === 'occupied'">
+                            <div>
+                                <input type="hidden" name="status" value="occupied">
+                                <div class="block mt-1 w-full bg-blue-900/20 border border-blue-500/50 text-blue-200 rounded-md shadow-sm p-2 flex items-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                    <span class="font-bold">RESERVADO (En Uso)</span>
+                                </div>
+                                <p class="mt-1 text-xs text-blue-400">
+                                    El estado no se puede editar manualmente mientras el vehículo está en uso. 
+                                    Debe finalizar la reserva para liberarlo.
+                                </p>
+                            </div>
+                        </template>
                         <x-input-error :messages="$errors->get('status')" class="mt-2" />
                     </div>
 
@@ -545,10 +747,22 @@
                                     class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
                             </div>
                             <div>
-                                <x-input-label for="edit_soap_expires" :value="__('Vencimiento SOAP')" class="text-gray-400" ::class="{'text-red-500 font-bold': editingVehicle.soap_expires_at && editingVehicle.soap_expires_at < new Date().toISOString().split('T')[0]}" />
-                                <x-text-input id="edit_soap_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" ::class="{'border-red-500 focus:border-red-500 ring-1 ring-red-500': editingVehicle.soap_expires_at && editingVehicle.soap_expires_at < new Date().toISOString().split('T')[0]}"  type="date" name="soap_expires_at" x-model="editingVehicle.soap_expires_at" />
-                                <template x-if="editingVehicle.soap_expires_at && editingVehicle.soap_expires_at < new Date().toISOString().split('T')[0]">
-                                    <span class="text-xs text-red-500 font-bold mt-1 block">⚠️ VENCIDO</span>
+                                <x-input-label for="edit_soap_expires" :value="__('Vencimiento SOAP')" class="text-gray-400" 
+                                    ::class="{
+                                        'text-red-500 font-bold': getDaysRemaining(editingVehicle.soap_expires_at) !== null && getDaysRemaining(editingVehicle.soap_expires_at) < 0,
+                                        'text-yellow-500 font-bold': getDaysRemaining(editingVehicle.soap_expires_at) !== null && getDaysRemaining(editingVehicle.soap_expires_at) >= 0 && getDaysRemaining(editingVehicle.soap_expires_at) <= 7
+                                    }" />
+                                <x-text-input id="edit_soap_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" 
+                                    ::class="{
+                                        'border-red-500 focus:border-red-500 ring-1 ring-red-500': getDaysRemaining(editingVehicle.soap_expires_at) !== null && getDaysRemaining(editingVehicle.soap_expires_at) < 0,
+                                        'border-yellow-500 focus:border-yellow-500 ring-1 ring-yellow-500': getDaysRemaining(editingVehicle.soap_expires_at) !== null && getDaysRemaining(editingVehicle.soap_expires_at) >= 0 && getDaysRemaining(editingVehicle.soap_expires_at) <= 7
+                                    }" 
+                                    type="date" name="soap_expires_at" x-model="editingVehicle.soap_expires_at" />
+                                <template x-if="getDaysRemaining(editingVehicle.soap_expires_at) !== null">
+                                    <div>
+                                        <span x-show="getDaysRemaining(editingVehicle.soap_expires_at) < 0" class="text-xs text-red-500 font-bold mt-1 block">⚠️ VENCIDO</span>
+                                        <span x-show="getDaysRemaining(editingVehicle.soap_expires_at) >= 0 && getDaysRemaining(editingVehicle.soap_expires_at) <= 7" class="text-xs text-yellow-500 font-bold mt-1 block" x-text="'⚠️ Faltan ' + getDaysRemaining(editingVehicle.soap_expires_at) + ' días'"></span>
+                                    </div>
                                 </template>
                             </div>
                         </div>
@@ -561,10 +775,22 @@
                                     class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
                             </div>
                             <div>
-                                <x-input-label for="edit_permit_expires" :value="__('Vencimiento Permiso')" class="text-gray-400" ::class="{'text-red-500 font-bold': editingVehicle.permit_expires_at && editingVehicle.permit_expires_at < new Date().toISOString().split('T')[0]}"/>
-                                <x-text-input id="edit_permit_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" ::class="{'border-red-500 focus:border-red-500 ring-1 ring-red-500': editingVehicle.permit_expires_at && editingVehicle.permit_expires_at < new Date().toISOString().split('T')[0]}" type="date" name="permit_expires_at" x-model="editingVehicle.permit_expires_at"/>
-                                <template x-if="editingVehicle.permit_expires_at && editingVehicle.permit_expires_at < new Date().toISOString().split('T')[0]">
-                                    <span class="text-xs text-red-500 font-bold mt-1 block">⚠️ VENCIDO</span>
+                                <x-input-label for="edit_permit_expires" :value="__('Vencimiento Permiso')" class="text-gray-400" 
+                                    ::class="{
+                                        'text-red-500 font-bold': getDaysRemaining(editingVehicle.permit_expires_at) !== null && getDaysRemaining(editingVehicle.permit_expires_at) < 0,
+                                        'text-yellow-500 font-bold': getDaysRemaining(editingVehicle.permit_expires_at) !== null && getDaysRemaining(editingVehicle.permit_expires_at) >= 0 && getDaysRemaining(editingVehicle.permit_expires_at) <= 7
+                                    }" />
+                                <x-text-input id="edit_permit_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" 
+                                    ::class="{
+                                        'border-red-500 focus:border-red-500 ring-1 ring-red-500': getDaysRemaining(editingVehicle.permit_expires_at) !== null && getDaysRemaining(editingVehicle.permit_expires_at) < 0,
+                                        'border-yellow-500 focus:border-yellow-500 ring-1 ring-yellow-500': getDaysRemaining(editingVehicle.permit_expires_at) !== null && getDaysRemaining(editingVehicle.permit_expires_at) >= 0 && getDaysRemaining(editingVehicle.permit_expires_at) <= 7
+                                    }"
+                                    type="date" name="permit_expires_at" x-model="editingVehicle.permit_expires_at"/>
+                                <template x-if="getDaysRemaining(editingVehicle.permit_expires_at) !== null">
+                                    <div>
+                                        <span x-show="getDaysRemaining(editingVehicle.permit_expires_at) < 0" class="text-xs text-red-500 font-bold mt-1 block">⚠️ VENCIDO</span>
+                                        <span x-show="getDaysRemaining(editingVehicle.permit_expires_at) >= 0 && getDaysRemaining(editingVehicle.permit_expires_at) <= 7" class="text-xs text-yellow-500 font-bold mt-1 block" x-text="'⚠️ Faltan ' + getDaysRemaining(editingVehicle.permit_expires_at) + ' días'"></span>
+                                    </div>
                                 </template>
                             </div>
                         </div>
@@ -577,10 +803,22 @@
                                     class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
                             </div>
                             <div>
-                                <x-input-label for="edit_technical_expires" :value="__('Vencimiento Revisión')" class="text-gray-400" ::class="{'text-red-500 font-bold': editingVehicle.technical_expires_at && editingVehicle.technical_expires_at < new Date().toISOString().split('T')[0]}" />
-                                <x-text-input id="edit_technical_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" ::class="{'border-red-500 focus:border-red-500 ring-1 ring-red-500': editingVehicle.technical_expires_at && editingVehicle.technical_expires_at < new Date().toISOString().split('T')[0]}" type="date" name="technical_expires_at" x-model="editingVehicle.technical_expires_at" />
-                                <template x-if="editingVehicle.technical_expires_at && editingVehicle.technical_expires_at < new Date().toISOString().split('T')[0]">
-                                    <span class="text-xs text-red-500 font-bold mt-1 block">⚠️ VENCIDO</span>
+                                <x-input-label for="edit_technical_expires" :value="__('Vencimiento Revisión')" class="text-gray-400" 
+                                    ::class="{
+                                        'text-red-500 font-bold': getDaysRemaining(editingVehicle.technical_expires_at) !== null && getDaysRemaining(editingVehicle.technical_expires_at) < 0,
+                                        'text-yellow-500 font-bold': getDaysRemaining(editingVehicle.technical_expires_at) !== null && getDaysRemaining(editingVehicle.technical_expires_at) >= 0 && getDaysRemaining(editingVehicle.technical_expires_at) <= 7
+                                    }" />
+                                <x-text-input id="edit_technical_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" 
+                                    ::class="{
+                                        'border-red-500 focus:border-red-500 ring-1 ring-red-500': getDaysRemaining(editingVehicle.technical_expires_at) !== null && getDaysRemaining(editingVehicle.technical_expires_at) < 0,
+                                        'border-yellow-500 focus:border-yellow-500 ring-1 ring-yellow-500': getDaysRemaining(editingVehicle.technical_expires_at) !== null && getDaysRemaining(editingVehicle.technical_expires_at) >= 0 && getDaysRemaining(editingVehicle.technical_expires_at) <= 7
+                                    }" 
+                                    type="date" name="technical_expires_at" x-model="editingVehicle.technical_expires_at" />
+                                <template x-if="getDaysRemaining(editingVehicle.technical_expires_at) !== null">
+                                    <div>
+                                        <span x-show="getDaysRemaining(editingVehicle.technical_expires_at) < 0" class="text-xs text-red-500 font-bold mt-1 block">⚠️ VENCIDO</span>
+                                        <span x-show="getDaysRemaining(editingVehicle.technical_expires_at) >= 0 && getDaysRemaining(editingVehicle.technical_expires_at) <= 7" class="text-xs text-yellow-500 font-bold mt-1 block" x-text="'⚠️ Faltan ' + getDaysRemaining(editingVehicle.technical_expires_at) + ' días'"></span>
+                                    </div>
                                 </template>
                             </div>
                         </div>
@@ -661,6 +899,15 @@
                             </div>
                         </div>
 
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="block text-xs text-gray-400 uppercase tracking-widest">Combustible</span>
+                                <span class="text-lg font-bold" 
+                                    :class="viewingVehicle.fuel_type === 'diesel' ? 'text-yellow-400' : 'text-green-400'"
+                                    x-text="viewingVehicle.fuel_type === 'diesel' ? 'PETRÓLEO' : 'BENCINA'"></span>
+                            </div>
+                            <div>
+
                         <div>
                             <span class="block text-xs text-gray-400 uppercase tracking-widest mb-1">Estado</span>
                             <span
@@ -674,6 +921,16 @@
                                 x-text="viewingVehicle.status === 'available' ? 'DISPONIBLE' : (viewingVehicle.status === 'out_of_service' ? 'FUERA DE SERVICIO' : (viewingVehicle.status === 'maintenance' ? 'MANTENIMIENTO' : 'RESERVADO'))">
                             </span>
                         </div>
+                        <div>
+                            <span class="block text-xs text-gray-400 uppercase tracking-widest mb-1">Estado Doc.</span>
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md"
+                                  :class="hasExpiredDocs(viewingVehicle.documents) ? 'text-red-400 bg-red-900/30 border border-red-900' : 'text-green-400 bg-green-900/30 border border-green-900'"
+                                  x-text="hasExpiredDocs(viewingVehicle.documents) ? 'ATRASADO' : 'AL DÍA'">
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
                         
                         <template x-if="viewingVehicle.status === 'occupied' && viewingVehicle.assigned_user">
                             <div class="mt-4 border-t border-gray-700 pt-3">
@@ -710,7 +967,8 @@
                                             <span x-text="doc.type === 'insurance' ? '🛡️ Seguro' : (doc.type === 'technical_review' ? '🔧 Revisión Técnica' : '📄 Permiso Circulación')" 
                                                   class="text-sm font-medium text-gray-200 mr-2"></span>
                                             <span x-text="'(Vence: ' + (doc.expires_at ? doc.expires_at.split('T')[0].split('-').reverse().join('/') : '') + ')'" class="text-xs text-gray-400"></span>
-                                            <span x-show="new Date(doc.expires_at) < new Date()" class="ml-2 text-xs font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded">VENCIDO</span>
+                                            <span x-show="getDaysRemaining(doc.expires_at) !== null && getDaysRemaining(doc.expires_at) < 0" class="ml-2 text-xs font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded">VENCIDO</span>
+                                            <span x-show="getDaysRemaining(doc.expires_at) !== null && getDaysRemaining(doc.expires_at) >= 0 && getDaysRemaining(doc.expires_at) <= 7" class="ml-2 text-xs font-bold text-yellow-500 bg-yellow-900/30 px-2 py-0.5 rounded" x-text="'⚠️ ' + getDaysRemaining(doc.expires_at) + ' días'"></span>
                                         </div>
                                         <div class="flex space-x-2">
                                             <a :href="'/storage/' + doc.file_path" target="_blank" class="text-blue-400 hover:text-blue-300 text-sm">Ver</a>
@@ -952,7 +1210,13 @@
                                                 </button>
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-100">
-                                                {{ $reservation->user->name }}
+                                                <div>{{ $reservation->user->name }}</div>
+                                                @if($reservation->conductor)
+                                                    <div class="text-xs text-yellow-500 mt-1 flex items-center">
+                                                        <span class="mr-1">👉 Para:</span>
+                                                        <span class="font-bold">{{ $reservation->conductor->nombre }}</span>
+                                                    </div>
+                                                @endif
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
                                                 @php
@@ -1142,7 +1406,11 @@
                                 <li class="flex items-center justify-between bg-gray-700 p-3 rounded border border-gray-600">
                                     <div>
                                         <p class="text-sm font-bold text-gray-200" x-text="doc.type === 'insurance' ? 'Seguro' : (doc.type === 'technical_review' ? 'Revisión Técnica' : 'Permiso Circulación')"></p>
-                                        <p class="text-xs text-gray-400">Vence: <span x-text="doc.expires_at ? doc.expires_at.split('T')[0].split('-').reverse().join('/') : ''"></span></p>
+                                        <p class="text-xs text-gray-400">
+                                            Vence: <span x-text="doc.expires_at ? doc.expires_at.split('T')[0].split('-').reverse().join('/') : ''"></span>
+                                            <span x-show="getDaysRemaining(doc.expires_at) !== null && getDaysRemaining(doc.expires_at) < 0" class="ml-2 text-xs font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded">VENCIDO</span>
+                                            <span x-show="getDaysRemaining(doc.expires_at) !== null && getDaysRemaining(doc.expires_at) >= 0 && getDaysRemaining(doc.expires_at) <= 7" class="ml-2 text-xs font-bold text-yellow-500 bg-yellow-900/30 px-2 py-0.5 rounded" x-text="'⚠️ ' + getDaysRemaining(doc.expires_at) + ' días'"></span>
+                                        </p>
                                     </div>
                                     <div class="flex items-center space-x-2">
                                         <a :href="'/storage/' + doc.file_path" target="_blank" class="text-blue-400 hover:text-blue-300 text-xs uppercase font-bold">Ver</a>

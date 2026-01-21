@@ -7,15 +7,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Conductor extends Model
 {
-    use SoftDeletes; 
+    use SoftDeletes;
 
     protected $dates = ['deleted_at', 'fecha_licencia'];
-    
+
     protected $table = 'conductores';
 
     // definir qué campos se pueden llenar en el formulario
     protected $fillable = [
         'nombre',
+        'rut',
         'cargo',
         'departamento',
         'fotografia',

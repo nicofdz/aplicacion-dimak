@@ -2,10 +2,11 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\Vehicle;
+use App\Models\VehicleDocument;
 use App\Models\User;
 use App\Notifications\VehicleDocumentExpired;
+use Illuminate\Console\Command;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Notification;
 
 class CheckVehicleDocuments extends Command
@@ -22,39 +23,45 @@ class CheckVehicleDocuments extends Command
      *
      * @var string
      */
-    protected $description = 'Verifica si hay documentos vencidos y notifica a los administradores';
+    protected $description = 'Check for vehicle documents expiring in 7 days or less and notify admins';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $this->info('Iniciando verificación de documentos...');
+        $this->info('Checking for expiring documents...');
 
-        $vehicles = Vehicle::with('documents')->get();
-        $expiredCount = 0;
+        // 1. Documents expiring exactly in 7 days (Warning)
+        $targetDate = Carbon::now()->addDays(7)->toDateString();
+        $warningDocs = VehicleDocument::with('vehicle')
+            ->whereDate('expires_at', $targetDate)
+            ->where('status', 'active') // Assuming soft deletes aren't enough or status column exists
+            ->get();
 
-        foreach ($vehicles as $vehicle) {
-            foreach ($vehicle->documents as $document) {
-                if ($document->expires_at && $document->expires_at < now()->startOfDay()) {
-                    // Encontrado documento vencido
-                    $this->error("Vehículo {$vehicle->plate} tiene vencido: {$document->type}");
+        // 2. Documents expiring TODAY (Danger)
+        $today = Carbon::now()->toDateString();
+        $dangerDocs = VehicleDocument::with('vehicle')
+            ->whereDate('expires_at', $today)
+            ->where('status', 'active')
+            ->get();
 
-                    // Notificar a admins (role 'admin' o todos si no hay roles definidos aun, asumo User::all() para demo o filtrar por isAdmin)
-                    // Asumiremos que notificamos a todos los usuarios por ahora o si tienes implementado roles.
-                    // Ajuste: Notificar a usuarios que sean admin. Como no sé la estructura exacta de roles, notificaré al usuario ID 1 o todos.
-                    // Mejor: Notificar a todos los usuarios.
+        $admins = User::all(); // Send to all users for now, or filter by admin role if implemented
 
-                    $users = User::all(); // O filtrar User::where('role', 'admin')->get();
+        $count = 0;
 
-                    // Evitar spam: Podríamos chequear si ya se notificó hoy, pero por ahora simple.
-                    Notification::send($users, new VehicleDocumentExpired($vehicle, $document->type));
-
-                    $expiredCount++;
-                }
-            }
+        foreach ($warningDocs as $doc) {
+            Notification::send($admins, new VehicleDocumentExpired($doc, 7));
+            $this->info("Warning sent for vehicle: {$doc->vehicle->plate} - {$doc->type}");
+            $count++;
         }
 
-        $this->info("Verificación completada. {$expiredCount} documentos vencidos encontrados.");
+        foreach ($dangerDocs as $doc) {
+            Notification::send($admins, new VehicleDocumentExpired($doc, 0));
+            $this->error("Danger sent for vehicle: {$doc->vehicle->plate} - {$doc->type}");
+            $count++;
+        }
+
+        $this->info("Check complete. {$count} notifications sent.");
     }
 }
