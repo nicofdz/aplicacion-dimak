@@ -64,6 +64,15 @@
                 <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Historial Entregas</span>
             </a>
         @endif
+        <!-- Gestion de Salas -->
+        <a href="{{ route('rooms.index') }}"
+            class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"
+            :class="{'justify-center': !open, 'bg-gray-800 text-white': {{ request()->routeIs('rooms.*') ? 'true' : 'false' }}}">
+            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 9h6m-6 3h6m-6 3h6M6.996 9h.01m-.01 3h.01m-.01 3h.01M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/>
+            </svg>
+            <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Gestión de Salas</span>
+        </a>
 
         <!-- Vehículos -->
         <a href="{{ route('vehicles.index') }}"

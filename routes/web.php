@@ -9,6 +9,7 @@ use App\Http\Controllers\VehicleRequestController;
 use App\Http\Controllers\ForceChangePasswordController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleReturnController;
+use App\Http\Controllers\MeetingRoomController;
 
 // Página de inicio
 Route::get('/', function () {
@@ -57,6 +58,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/conductores/{conductor}', [ConductorController::class, 'update'])->name('conductores.update');
     Route::delete('/conductores/{conductor}', [ConductorController::class, 'destroy'])->name('conductores.destroy');
 
+    // Gestión de Salas 
+    Route::get('rooms/trash', [MeetingRoomController::class, 'trash'])->name('rooms.trash');
+    Route::put('rooms/{id}/restore', [MeetingRoomController::class, 'restore'])->name('rooms.restore');
+    Route::delete('rooms/{id}/force-delete', [MeetingRoomController::class, 'forceDelete'])->name('rooms.force-delete');
+
+    Route::resource('rooms', MeetingRoomController::class);
+
     // Rutas de Mantenimiento
     Route::post('vehiculos/{vehicle}/maintenance/state', [MaintenanceController::class, 'updateState'])->name('vehicles.maintenance.state');
     Route::post('vehiculos/{vehicle}/maintenance/request', [MaintenanceController::class, 'storeRequest'])->name('vehicles.maintenance.request');
@@ -83,6 +91,8 @@ Route::middleware('auth')->group(function () {
     // Notificaciones
     Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'read'])->name('notifications.read');
     Route::post('/notifications/mark-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAll');
+
+    
 });
 
 // Rutas de cambio de contraseña forzado 
@@ -93,11 +103,14 @@ Route::middleware(['auth'])->group(function () {
         ->name('password.change.update');
 });
 
-// Rutas de gestión de usuarios 
+//
 Route::middleware(['auth', 'force.password.change'])->group(function () {
+    //gestion de usuarios
     Route::put('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
     Route::delete('users/{id}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
     Route::resource('users', UserController::class);
+
+    
 });
 
 require __DIR__ . '/auth.php';
