@@ -128,6 +128,19 @@
                             </ul>
                         </div>
 
+                        <!-- Tipo de Destino -->
+                        <div class="mt-4">
+                            <x-input-label for="destination_type" :value="__('Tipo de Destino')" class="mb-1" />
+                            <select id="destination_type" name="destination_type"
+                                class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm"
+                                required>
+                                <option value="" disabled selected>-- Seleccione Tipo de Viaje --</option>
+                                <option value="local">🏙️ Local (Dentro de la ciudad)</option>
+                                <option value="outside">🛣️ Fuera de la ciudad</option>
+                            </select>
+                            <x-input-error :messages="$errors->get('destination_type')" class="mt-2" />
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="start_date" :value="__('Fecha y Hora Inicio')" />

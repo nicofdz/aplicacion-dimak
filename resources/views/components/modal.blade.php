@@ -1,7 +1,8 @@
 @props([
     'name',
     'show' => false,
-    'maxWidth' => '2xl'
+    'maxWidth' => '2xl',
+    'zIndex' => 'z-50'
 ])
 
 @php
@@ -11,6 +12,11 @@ $maxWidth = [
     'lg' => 'sm:max-w-lg',
     'xl' => 'sm:max-w-xl',
     '2xl' => 'sm:max-w-2xl',
+    '3xl' => 'sm:max-w-3xl',
+    '4xl' => 'sm:max-w-4xl',
+    '5xl' => 'sm:max-w-5xl',
+    '6xl' => 'sm:max-w-6xl',
+    '7xl' => 'sm:max-w-7xl',
 ][$maxWidth];
 @endphp
 
@@ -46,7 +52,7 @@ $maxWidth = [
     x-on:keydown.tab.prevent="$event.shiftKey || nextFocusable().focus()"
     x-on:keydown.shift.tab.prevent="prevFocusable().focus()"
     x-show="show"
-    class="fixed inset-0 z-50 overflow-y-auto"
+    class="fixed inset-0 {{ $zIndex }} overflow-y-auto"
     style="display: {{ $show ? 'block' : 'none' }};"
 >
     <!-- Overlay -->

@@ -90,32 +90,117 @@
                     <div x-show="showConfirmModal"
                         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
                         style="display: none;" x-transition>
-                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Confirmar Devolución
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-2xl">
+                            <h3
+                                class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 border-b pb-2 dark:border-gray-700">
+                                Check-in de Devolución
                             </h3>
-                            ¿Estás seguro de que quieres finalizar esta reserva y devolver el vehículo?
-                            </p>
+                            <p class="mb-4 text-gray-600 dark:text-gray-400 text-sm">per complete los detalles del
+                                estado del vehículo para finalizar el viaje.</p>
 
-                            <form :action="returnUrl" method="POST">
+                            <form :action="returnUrl" method="POST" enctype="multipart/form-data">
                                 @csrf
-                                <div class="mb-4">
-                                    <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
-                                        for="mileage">
-                                        Kilometraje de Devolución
-                                    </label>
-                                    <input type="number" name="return_mileage" id="mileage" required
-                                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-100 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                        placeholder="Ingrese kilometraje actual">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <!-- Kilometraje -->
+                                    <div class="col-span-2">
+                                        <x-input-label for="mileage" :value="__('Kilometraje de Devolución')" />
+                                        <x-text-input id="mileage" type="text" name="return_mileage" required
+                                            class="block mt-1 w-full" placeholder="Ingrese kilometraje actual"
+                                            x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" />
+                                        <x-input-error :messages="$errors->get('return_mileage')" class="mt-2" />
+                                    </div>
+
+                                    <!-- Nivel de Combustible -->
+                                    <div>
+                                        <x-input-label for="fuel_level" :value="__('Nivel de Combustible')" />
+                                        <select id="fuel_level" name="fuel_level" required
+                                            class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            <option value="" disabled selected>Seleccione...</option>
+                                            <option value="1/4">1/4 de Estanque</option>
+                                            <option value="1/2">1/2 Estanque</option>
+                                            <option value="3/4">3/4 Estanque</option>
+                                            <option value="full">Estanque Lleno</option>
+                                        </select>
+                                        <x-input-error :messages="$errors->get('fuel_level')" class="mt-2" />
+                                    </div>
+
+                                    <!-- Limpieza -->
+                                    <div>
+                                        <x-input-label for="cleanliness" :value="__('Limpieza')" />
+                                        <select id="cleanliness" name="cleanliness" required
+                                            class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            <option value="clean">🟢 Limpio</option>
+                                            <option value="dirty">🟡 Sucio (Normal)</option>
+                                            <option value="very_dirty">🔴 Muy Sucio</option>
+                                        </select>
+                                        <x-input-error :messages="$errors->get('cleanliness')" class="mt-2" />
+                                    </div>
+
+                                    <!-- Neumáticos Delanteros -->
+                                    <div>
+                                        <x-input-label for="tire_front" :value="__('Neumáticos Delanteros')" />
+                                        <select id="tire_front" name="tire_status_front" required
+                                            class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            <option value="good">🟢 Bueno</option>
+                                            <option value="fair">🟡 Regular</option>
+                                            <option value="poor">🔴 Malo/Daño</option>
+                                        </select>
+                                        <x-input-error :messages="$errors->get('tire_status_front')" class="mt-2" />
+                                    </div>
+
+                                    <!-- Neumáticos Traseros -->
+                                    <div>
+                                        <x-input-label for="tire_rear" :value="__('Neumáticos Traseros')" />
+                                        <select id="tire_rear" name="tire_status_rear" required
+                                            class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            <option value="good">🟢 Bueno</option>
+                                            <option value="fair">🟡 Regular</option>
+                                            <option value="poor">🔴 Malo/Daño</option>
+                                        </select>
+                                        <x-input-error :messages="$errors->get('tire_status_rear')" class="mt-2" />
+                                    </div>
+
+                                    <!-- Daños Carrocería -->
+                                    <div class="col-span-2">
+                                        <label class="inline-flex items-center">
+                                            <input type="checkbox" name="body_damage_reported" value="1"
+                                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                            <span
+                                                class="ml-2 text-gray-700 dark:text-gray-300">{{ __('Reportar nuevos daños en carrocería') }}</span>
+                                        </label>
+                                    </div>
+
+                                    <!-- Comentarios -->
+                                    <div class="col-span-2">
+                                        <x-input-label for="comments" :value="__('Comentarios Adicionales')" />
+                                        <textarea id="comments" name="comments" rows="2"
+                                            class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                        <x-input-error :messages="$errors->get('comments')" class="mt-2" />
+                                    </div>
+
+                                    <!-- Fotos -->
+                                    <div class="col-span-2" x-data="{ files: [] }">
+                                        <x-input-label for="photos" :value="__('Fotos (Opcional - Máx 5)')" />
+                                        <input type="file" id="photos" name="photos[]" multiple accept="image/*"
+                                            @change="files = Array.from($event.target.files)"
+                                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-gray-700 dark:file:text-gray-300" />
+
+                                        <div class="mt-2 text-xs text-gray-500" x-show="files.length > 0">
+                                            <span x-text="files.length + ' archivos seleccionados'"></span>
+                                        </div>
+                                        <x-input-error :messages="$errors->get('photos')" class="mt-2" />
+                                        <x-input-error :messages="$errors->get('photos.*')" class="mt-2" />
+                                    </div>
                                 </div>
 
-                                <div class="flex justify-end space-x-4">
+                                <div class="flex justify-end space-x-4 border-t pt-4 dark:border-gray-700">
                                     <button type="button" @click="showConfirmModal = false"
                                         class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-600">
                                         Cancelar
                                     </button>
                                     <button type="submit"
-                                        class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500">
-                                        Confirmar Devolución
+                                        class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500 font-bold">
+                                        Confirmar Entrega
                                     </button>
                                 </div>
                             </form>

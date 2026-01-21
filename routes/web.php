@@ -8,6 +8,7 @@ use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\VehicleRequestController;
 use App\Http\Controllers\ForceChangePasswordController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VehicleReturnController;
 
 // Página de inicio
 Route::get('/', function () {
@@ -16,7 +17,7 @@ Route::get('/', function () {
 
 // Dashboard 
 Route::get('/dashboard', [VehicleController::class, 'index'])
-    ->middleware(['auth',  'force.password.change'])
+    ->middleware(['auth', 'force.password.change'])
     ->name('dashboard');
 
 // Grupo de rutas para el perfil de usuario
@@ -62,6 +63,12 @@ Route::middleware('auth')->group(function () {
     Route::post('vehiculos/{vehicle}/maintenance/complete', [MaintenanceController::class, 'complete'])->name('vehicles.maintenance.complete');
     Route::post('maintenance/requests/{id}/accept', [MaintenanceController::class, 'acceptRequest'])->name('maintenance.requests.accept');
 
+    // Trigger manual de alertas (Solo para pruebas/demo)
+    Route::get('/maintenance/check', function (\App\Services\MaintenanceService $service) {
+        $service->checkAndNotify();
+        return redirect()->back()->with('success', 'Chequeo de alertas ejecutado.');
+    })->name('maintenance.check');
+
     // Rutas de Solicitudes de Vehículos (Reservas)
     Route::get('/solicitar-vehiculo', [VehicleRequestController::class, 'create'])->name('requests.create');
     Route::post('/solicitar-vehiculo', [VehicleRequestController::class, 'store'])->name('requests.store');
@@ -69,6 +76,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/requests/{id}/reject', [VehicleRequestController::class, 'reject'])->name('requests.reject');
     Route::get('/mis-reservas', [VehicleRequestController::class, 'index'])->name('requests.index');
     Route::post('/requests/{id}/complete', [VehicleRequestController::class, 'complete'])->name('requests.complete');
+
+    // Historial de Devoluciones (Admin)
+    Route::get('/admin/returns', [VehicleReturnController::class, 'index'])->name('admin.returns.index');
+
+    // Notificaciones
+    Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('/notifications/mark-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAll');
 });
 
 // Rutas de cambio de contraseña forzado 

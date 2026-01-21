@@ -26,6 +26,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'rut',
         'address',
         'phone',
+        'license_expires_at',
+        'license_photo_path',
         'role',
         'must_change_password',
         'is_active',
@@ -51,6 +53,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'license_expires_at' => 'date',
             'must_change_password' => 'boolean',
             'is_active' => 'boolean',
         ];

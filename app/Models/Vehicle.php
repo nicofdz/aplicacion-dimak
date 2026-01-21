@@ -16,6 +16,7 @@ class Vehicle extends Model
 
     protected $fillable = [
         'plate',
+        'serial_number',
         'brand',
         'model',
         'year',
@@ -44,6 +45,11 @@ class Vehicle extends Model
         return $this->hasMany(VehicleRequest::class);
     }
 
+    public function documents()
+    {
+        return $this->hasMany(VehicleDocument::class);
+    }
+
     /**
      * Verifica si el vehículo está disponible en un rango de fechas.
      */
@@ -64,19 +70,18 @@ class Vehicle extends Model
     /**
      * Obtiene el estado para mostrar (incluyendo reservas activas).
      */
+    /**
+     * Obtiene el estado para mostrar (incluyendo reservas activas).
+     */
     public function getDisplayStatusAttribute()
     {
-        // Si está en taller o mantenimiento, mostrar eso
-        if ($this->status !== 'available' && $this->status !== 'occupied') {
+        // Si el estado en BD no es available, lo respetamos (incluye occupied, out_of_service, maintenance)
+        if ($this->status !== 'available') {
             return $this->status;
         }
 
-        // Verificar si tiene una reserva ACTIVA en este momento
-        $activeReservation = $this->reservations()
-            ->where('status', 'approved')
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
-            ->first();
+        // Fallback: Verificar si tiene una reserva ACTIVA en este momento aunque el estado diga available
+        $activeReservation = $this->getActiveReservationAttribute();
 
         if ($activeReservation) {
             return 'occupied';
@@ -92,9 +97,10 @@ class Vehicle extends Model
     {
         return $this->reservations()
             ->where('status', 'approved')
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
+            ->where('start_date', '<=', now()->endOfDay()) // Por si la reserva empieza hoy más tarde
+            ->where('end_date', '>=', now()->startOfDay()) // Incluir todo el día de término
             ->with('user')
+            ->orderBy('start_date', 'asc') // Tomar la más cercana
             ->first();
     }
 

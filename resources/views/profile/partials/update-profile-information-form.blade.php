@@ -1,4 +1,13 @@
-<section>
+<section x-data="{ 
+    showImageModal: false, 
+    modalImageUrl: '', 
+    openModal(url) { 
+        if(url) {
+            this.modalImageUrl = url; 
+            this.showImageModal = true; 
+        }
+    } 
+}" @view-image.window="openModal($event.detail)">
     <header>
         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
             {{ __('Información del Perfil') }}
@@ -25,7 +34,8 @@
                 <div class="mt-2" x-show="! photoPreview">
                     @if ($user->profile_photo_path)
                         <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="{{ $user->name }}"
-                            class="rounded-full h-20 w-20 object-cover">
+                            @click="$dispatch('view-image', '{{ asset('storage/' . $user->profile_photo_path) }}')"
+                            class="rounded-full h-20 w-20 object-cover cursor-pointer hover:opacity-75 transition">
                     @else
                         <div
                             class="rounded-full h-20 w-20 bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xl">
@@ -58,6 +68,203 @@
                 <x-input-error class="mt-2" :messages="$errors->get('photo')" />
             </div>
         </div>
+
+        <!-- License Section -->
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Licencia de Conducir') }}</h3>
+
+            <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+
+            <div x-data="{
+                licensePreview: null,
+                isScanning: false,
+                scanMessage: '',
+                scanProgress: 0,
+
+                scanLicense(file) {
+                    if (!file) return;
+
+                    this.isScanning = true;
+                    this.scanMessage = 'Iniciando escáner OCR...';
+                    this.scanProgress = 0;
+
+                    Tesseract.recognize(
+                        file,
+                        'eng',
+                        {
+                            logger: m => {
+                                if (m.status === 'recognizing text') {
+                                    this.scanProgress = Math.round(m.progress * 100);
+                                    this.scanMessage = `Analizando imagen: ${this.scanProgress}%`;
+                                } else {
+                                    this.scanMessage = m.status;
+                                }
+                            }
+                        }
+                    ).then(({ data: { text } }) => {
+                        console.log('Texto OCR:', text);
+                        this.extractDate(text);
+                        this.isScanning = false;
+                        this.scanMessage = 'Escaneo completado.';
+                    }).catch(err => {
+                        console.error(err);
+                        this.isScanning = false;
+                        this.scanMessage = 'Error al escanear.';
+                    });
+                },
+
+                async compressImage(file) {
+                    this.scanMessage = 'Optimizando imagen...';
+
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = (event) => {
+                            const img = new Image();
+                            img.src = event.target.result;
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+
+                                // Redimensionar si es muy grande (máx 1920px ancho)
+                                const MAX_WIDTH = 1920;
+                                let width = img.width;
+                                let height = img.height;
+
+                                if (width > MAX_WIDTH) {
+                                    height *= MAX_WIDTH / width;
+                                    width = MAX_WIDTH;
+                                }
+
+                                canvas.width = width;
+                                canvas.height = height;
+                                ctx.drawImage(img, 0, 0, width, height);
+
+                                // Convertir a Blob (JPEG calidad 80%)
+                                canvas.toBlob((blob) => {
+                                    // Crear un nuevo archivo con el blob comprimido
+                                    const compressedFile = new File([blob], file.name, {
+                                        type: 'image/jpeg',
+                                        lastModified: Date.now(),
+                                    });
+                                    resolve(compressedFile);
+                                }, 'image/jpeg', 0.8);
+                            };
+                        };
+                    });
+                },
+
+                extractDate(text) {
+                    // ... (rest of logic same)
+                    // Patrones comunes para fechas: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD
+                    const datePatterns = [
+                        /\b(\d{2})[-/](\d{2})[-/](\d{4})\b/g, // DD/MM/YYYY
+                        /\b(\d{4})[-/](\d{2})[-/](\d{2})\b/g  // YYYY-MM-DD
+                    ];
+
+                    let foundDates = [];
+
+                    datePatterns.forEach(pattern => {
+                        let match;
+                        while ((match = pattern.exec(text)) !== null) {
+                            if (match[3].length === 4) { // DD/MM/YYYY
+                                foundDates.push(new Date(`${match[3]}-${match[2]}-${match[1]}`));
+                            } else { // YYYY-MM-DD
+                                foundDates.push(new Date(match[0]));
+                            }
+                        }
+                    });
+
+                    if (foundDates.length > 0) {
+                        foundDates = foundDates.filter(d => !isNaN(d.getTime()));
+                        if (foundDates.length > 0) {
+                            foundDates.sort((a, b) => b - a);
+                            const bestDate = foundDates[0];
+                            const formatted = bestDate.toISOString().split('T')[0];
+                            document.getElementById('license_expires_at').value = formatted;
+                            this.scanMessage = `Fecha detectada: ${bestDate.toLocaleDateString()}`;
+                        } else {
+                            this.scanMessage = 'No se encontraron fechas válidas.';
+                        }
+                    } else {
+                         this.scanMessage = 'No se detectó ninguna fecha legible.';
+                    }
+                }
+            }">
+
+                <!-- License Photo Input -->
+                <div class="mb-4">
+                    <x-input-label for="license_photo" :value="__('Foto de la Licencia')" />
+
+                    <!-- Preview Area -->
+                    <div class="mt-2 mb-4" x-show="!licensePreview">
+                        @if ($user->license_photo_path)
+                            <img src="{{ asset('storage/' . $user->license_photo_path) }}" alt="Licencia"
+                                @click="$dispatch('view-image', '{{ asset('storage/' . $user->license_photo_path) }}')"
+                                class="h-40 w-auto object-cover rounded-md border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-75 transition">
+                        @else
+                            <div class="h-40 w-full max-w-sm flex items-center justify-center bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md">
+                                <span class="text-gray-400 text-sm">Sin foto de licencia</span>
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <div class="mt-2 mb-4" x-show="licensePreview" style="display: none;">
+                         <img :src="licensePreview" @click="$dispatch('view-image', licensePreview)" class="h-40 w-auto object-cover rounded-md border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-75 transition">
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <x-secondary-button type="button" x-on:click.prevent="$refs.license.click()">
+                            {{ __('Subir Foto Licencia') }}
+                        </x-secondary-button>
+                        
+                        <!-- Scanning Status -->
+                        <div x-show="isScanning" class="flex items-center text-sm text-blue-500">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span x-text="scanMessage"></span>
+                        </div>
+                        <div x-show="!isScanning && scanMessage" class="text-sm text-green-500" x-text="scanMessage"></div>
+                    </div>
+
+                    <input type="file" id="license_photo" class="hidden" x-ref="license" name="license_photo"
+                        accept="image/*"
+                        x-on:change="
+                            const originalFile = $refs.license.files[0];
+                            if (originalFile) {
+                                // 1. Mostrar preview temporal
+                                const reader = new FileReader();
+                                reader.onload = (e) => { licensePreview = e.target.result; };
+                                reader.readAsDataURL(originalFile);
+
+                                // 2. Comprimir imagen
+                                compressImage(originalFile).then(compressedFile => {
+                                    // 3. Reemplazar el archivo en el input (hack para enviar el comprimido)
+                                    const dataTransfer = new DataTransfer();
+                                    dataTransfer.items.add(compressedFile);
+                                    $refs.license.files = dataTransfer.files;
+
+                                    // 4. Escanear la imagen ya comprimida
+                                    scanLicense(compressedFile);
+                                });
+                            }
+                        " />
+                    <x-input-error class="mt-2" :messages="$errors->get('license_photo')" />
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        La imagen será escaneada automáticamente para detectar la fecha de vencimiento.
+                    </p>
+                </div>
+
+                <!-- Expiration Date -->
+                <div>
+                    <x-input-label for="license_expires_at" :value="__('Fecha de Vencimiento')" />
+                    <x-text-input id="license_expires_at" name="license_expires_at" type="date" class="mt-1 block w-full bg-gray-50 dark:bg-gray-900" 
+                        :value="old('license_expires_at', optional($user->license_expires_at)->format('Y-m-d'))" />
+                    <x-input-error class="mt-2" :messages="$errors->get('license_expires_at')" />
+                </div>
+            </div>
 
         <!-- Name -->
         <div>
@@ -169,4 +376,25 @@
             @endif
         </div>
     </form>
+    <!-- Image Modal -->
+    <div x-show="showImageModal" 
+        style="display: none;"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0">
+        
+        <div @click.away="showImageModal = false" class="relative max-w-4xl w-full max-h-full flex justify-center">
+            <img :src="modalImageUrl" class="max-w-full max-h-[90vh] object-contain rounded-lg shadow-xl">
+            
+            <button @click="showImageModal = false" class="absolute -top-10 right-0 text-white hover:text-gray-300 focus:outline-none">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
 </section>

@@ -42,6 +42,20 @@ class ProfileController extends Controller
             $request->user()->profile_photo_path = $path;
         }
 
+        if ($request->hasFile('license_photo')) {
+            // Eliminar foto antigua de licencia si existe
+            if ($request->user()->license_photo_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($request->user()->license_photo_path);
+            }
+
+            $path = $request->file('license_photo')->store('license-photos', 'public');
+            $request->user()->license_photo_path = $path;
+        }
+
+        if ($request->filled('license_expires_at')) {
+            $request->user()->license_expires_at = $request->input('license_expires_at');
+        }
+
         $request->user()->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');

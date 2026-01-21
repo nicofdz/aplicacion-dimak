@@ -19,8 +19,8 @@
                         <span class="block text-4xl font-black text-blue-500">{{ $countAsignado }}</span>
                     </div>
                     <div class="text-center px-4 border-l border-gray-700">
-                        <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">En Taller</span>
-                        <span class="block text-4xl font-black text-red-500">{{ $countTaller }}</span>
+                        <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Fuera de Servicio</span>
+                        <span class="block text-4xl font-black text-red-500">{{ $countFueraDeServicio }}</span>
                     </div>
                     <div class="text-center px-4 border-l border-gray-700">
                         <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Mantenimiento</span>
@@ -43,21 +43,27 @@
                                 <div class="flex items-center justify-center h-full text-gray-700 font-black text-2xl uppercase italic">Sin Foto</div>
                             @endif
                             
-                            <div class="absolute top-4 left-4">
+                            <div class="absolute top-4 left-4 flex flex-col items-start gap-1">
                                 <span class="px-3 py-1 rounded-lg text-[10px] font-black tracking-widest border
                                     {{ $status === 'available' ? 'text-green-400 bg-green-900/30 border-green-500/50' : '' }}
-                                    {{ $status === 'workshop' ? 'text-red-400 bg-red-900/30 border-red-500/50' : '' }}
+                                    {{ $status === 'out_of_service' ? 'text-red-400 bg-red-900/30 border-red-500/50' : '' }}
                                     {{ $status === 'maintenance' ? 'text-yellow-400 bg-yellow-900/30 border-yellow-500/50' : '' }}
                                     {{ $status === 'occupied' ? 'text-blue-400 bg-blue-900/30 border-blue-500/50' : '' }}">
                                     
                                     @switch($status)
                                         @case('available') DISPONIBLE @break
-                                        @case('workshop') EN TALLER @break
+                                        @case('out_of_service') FUERA DE SERVICIO @break
                                         @case('maintenance') MANTENCIÓN @break
                                         @case('occupied') RESERVADO @break
                                         @default {{ strtoupper($status) }}
                                     @endswitch
                                 </span>
+                                
+                                @if($status === 'occupied' && $vehicle->active_reservation)
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold tracking-wider text-blue-200 bg-blue-900/80 border border-blue-500/30 backdrop-blur-sm">
+                                        {{ Str::limit($vehicle->active_reservation->user->name, 15) }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
 
@@ -80,7 +86,8 @@
                                     year: {{ $vehicle->year }}, 
                                     mileage: {{ $vehicle->mileage }}, 
                                     status: '{{ $status }}', 
-                                    imageUrl: '{{ $vehicle->image_path ? Storage::url($vehicle->image_path) : '' }}' 
+                                    imageUrl: '{{ $vehicle->image_path ? Storage::url($vehicle->image_path) : '' }}',
+                                    assignedUser: '{{ ($status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->name : '' }}'
                                 }; openViewModal = true" class="p-2 bg-gray-700 hover:bg-emerald-600 rounded-xl text-white transition-colors">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 </button>
@@ -118,12 +125,20 @@
                                     :class="{
                                         'text-green-400': viewingVehicle.status === 'available',
                                         'text-blue-400': viewingVehicle.status === 'occupied',
-                                        'text-red-400': viewingVehicle.status === 'workshop',
+                                        'text-red-400': viewingVehicle.status === 'out_of_service',
                                         'text-yellow-400': viewingVehicle.status === 'maintenance'
                                     }"
-                                    x-text="viewingVehicle.status === 'occupied' ? 'RESERVADO' : (viewingVehicle.status === 'available' ? 'DISPONIBLE' : viewingVehicle.status.toUpperCase())">
+                                    x-text="viewingVehicle.status === 'occupied' ? 'RESERVADO' : (viewingVehicle.status === 'out_of_service' ? 'FUERA DE SERVICIO' : (viewingVehicle.status === 'available' ? 'DISPONIBLE' : viewingVehicle.status.toUpperCase()))">
                                 </span>
                             </div>
+                            
+                            <!-- Assigned User (Visible only if reserved) -->
+                            <template x-if="viewingVehicle.status === 'occupied' && viewingVehicle.assignedUser">
+                                <div>
+                                    <span class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold">Asignado a</span>
+                                    <span class="text-lg font-bold text-blue-300" x-text="viewingVehicle.assignedUser"></span>
+                                </div>
+                            </template>
                         </div>
                     </div>
                     <div class="mt-8 flex justify-end">

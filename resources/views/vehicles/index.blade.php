@@ -114,13 +114,13 @@
                                                 $displayStatus = $vehicle->display_status;
                                                 $statusClasses = [
                                                     'available' => 'text-green-400 bg-green-900/30 border border-green-900',
-                                                    'workshop' => 'text-red-400 bg-red-900/30 border border-red-900',
+                                                    'out_of_service' => 'text-red-400 bg-red-900/30 border border-red-900',
                                                     'maintenance' => 'text-yellow-400 bg-yellow-900/30 border border-yellow-900',
                                                     'occupied' => 'text-blue-400 bg-blue-900/30 border border-blue-900',
                                                 ];
                                                 $statusLabel = [
                                                     'available' => 'DISPONIBLE',
-                                                    'workshop' => 'EN TALLER',
+                                                    'out_of_service' => 'FUERA DE SERVICIO',
                                                     'maintenance' => 'MANTENIMIENTO',
                                                     'occupied' => 'RESERVADO',
                                                 ];
@@ -139,15 +139,47 @@
                                                 <p class="text-gray-900 dark:text-gray-100 whitespace-no-wrap mr-2">
                                                     {{ number_format($vehicle->mileage, 0, '', '.') }} km
                                                 </p>
-                                                @if($vehicle->currentMaintenanceState && $vehicle->currentMaintenanceState->next_oil_change_km && $vehicle->mileage >= $vehicle->currentMaintenanceState->next_oil_change_km)
-                                                    <span
-                                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 animate-pulse">
-                                                        ⚠️ MANTENCIÓN
-                                                    </span>
+                                                @if($vehicle->currentMaintenanceState && $vehicle->currentMaintenanceState->next_oil_change_km)
+                                                    @if($vehicle->mileage >= $vehicle->currentMaintenanceState->next_oil_change_km)
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 animate-pulse">
+                                                            ⚠️ VENCIDO
+                                                        </span>
+                                                    @elseif(($vehicle->currentMaintenanceState->next_oil_change_km - $vehicle->mileage) <= 500)
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                            ⚠️ PRÓXIMO
+                                                        </span>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </td>
                                         <td class="px-5 py-4 text-sm font-medium">
+                                            @php
+                                                $soap = $vehicle->documents->firstWhere('type', 'insurance');
+                                                $permit = $vehicle->documents->firstWhere('type', 'permit');
+                                                $technical = $vehicle->documents->firstWhere('type', 'technical_review');
+                                                
+                                                $jsVehicle = [
+                                                    'id' => $vehicle->id,
+                                                    'plate' => $vehicle->plate,
+                                                    'serial_number' => $vehicle->serial_number,
+                                                    'brand' => $vehicle->brand,
+                                                    'model' => $vehicle->model,
+                                                    'year' => $vehicle->year,
+                                                    'mileage' => $vehicle->mileage,
+                                                    'status' => $vehicle->status,
+                                                    'image_url' => $vehicle->image_path ? Storage::url($vehicle->image_path) : '',
+                                                    'imageUrl' => $vehicle->image_path ? Storage::url($vehicle->image_path) : '', // Duplicate for compatibility if needed
+                                                    'documents' => $vehicle->documents,
+                                                    'soap_expires_at' => $soap?->expires_at?->format('Y-m-d') ?? '',
+                                                    'permit_expires_at' => $permit?->expires_at?->format('Y-m-d') ?? '',
+                                                    'technical_expires_at' => $technical?->expires_at?->format('Y-m-d') ?? '',
+                                                    'technical_expires_at' => $technical?->expires_at?->format('Y-m-d') ?? '',
+                                                    'assigned_user' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->name : '',
+                                                    'assigned_user_rut' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->rut : '',
+                                                    'assigned_user_phone' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->phone : '',
+                                                ];
+                                                $jsonVehicle = json_encode($jsVehicle);
+                                            @endphp
                                             <div class="flex items-center space-x-4">
                                                 <button @click="
                                                                 maintenanceVehicle = {
@@ -178,17 +210,9 @@
                                                     </svg>
                                                 </button>
                                                 <button @click="
-                                                                                                        viewingVehicle = {
-                                                                                                            plate: '{{ $vehicle->plate }}',
-                                                                                                            brand: '{{ $vehicle->brand }}',
-                                                                                                            model: '{{ $vehicle->model }}',
-                                                                                                            year: {{ $vehicle->year }},
-                                                                                                            mileage: {{ $vehicle->mileage }},
-                                                                                                            status: '{{ $vehicle->status }}',
-                                                                                                            imageUrl: '{{ $vehicle->image_path ? Storage::url($vehicle->image_path) : '' }}'
-                                                                                                        };
-                                                                                                        $dispatch('open-modal', 'view-vehicle-modal');
-                                                                                                    "
+                                                                viewingVehicle = {{ $jsonVehicle }};
+                                                                $dispatch('open-modal', 'view-vehicle-modal');
+                                                            "
                                                     class="text-green-400 hover:text-green-300 transition duration-150"
                                                     title="Ver Detalle">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor"
@@ -202,18 +226,10 @@
                                                     </svg>
                                                 </button>
                                                 <button @click="
-                                                                                                                editingVehicle = {
-                                                                                                                    id: {{ $vehicle->id }},
-                                                                                                                    plate: '{{ $vehicle->plate }}',
-                                                                                                                    brand: '{{ $vehicle->brand }}',
-                                                                                                                    model: '{{ $vehicle->model }}',
-                                                                                                                    year: {{ $vehicle->year }},
-                                                                                                                    mileage: {{ $vehicle->mileage }},
-                                                                                                                    status: '{{ $vehicle->status }}'
-                                                                                                                };
-                                                                                                                editAction = '{{ route('vehicles.update', $vehicle) }}';
-                                                                                                                $dispatch('open-modal', 'edit-vehicle-modal');
-                                                                                                            "
+                                                    editingVehicle = {{ $jsonVehicle }};
+                                                    editAction = '{{ route('vehicles.update', $vehicle->id) }}';
+                                                    $dispatch('open-modal', 'edit-vehicle-modal');
+                                                "
                                                     class="text-blue-400 hover:text-blue-300 transition duration-150"
                                                     title="Editar">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor"
@@ -224,6 +240,7 @@
                                                         </path>
                                                     </svg>
                                                 </button>
+
                                                     <button
                                                         @click="$dispatch('open-modal', 'confirm-delete-modal'); deleteAction = '{{ route('vehicles.destroy', $vehicle) }}'"
                                                         class="text-red-400 hover:text-red-300 transition duration-150"
@@ -287,6 +304,15 @@
                         <x-input-error :messages="$errors->get('plate')" class="mt-2" />
                     </div>
 
+                    <!-- Nº Serie/Chasis -->
+                    <div>
+                        <x-input-label for="serial_number" :value="__('Nº Serie/Chasis')" class="text-gray-300" />
+                        <x-text-input id="serial_number"
+                            class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500"
+                            type="text" name="serial_number" :value="old('serial_number')" placeholder="Opcional" />
+                        <x-input-error :messages="$errors->get('serial_number')" class="mt-2" />
+                    </div>
+
                     <!-- Marca -->
                     <div>
                         <x-input-label for="brand" :value="__('Marca')" class="text-gray-300" />
@@ -319,8 +345,53 @@
                         <x-input-label for="mileage" :value="__('Kilometraje')" class="text-gray-300" />
                         <x-text-input id="mileage"
                             class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500"
-                            type="number" name="mileage" :value="old('mileage')" required placeholder="0" />
+                            type="text" name="mileage" :value="old('mileage')" required placeholder="0" 
+                            x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" />
                         <x-input-error :messages="$errors->get('mileage')" class="mt-2" />
+                    </div>
+
+                    <!-- Documentación Inicial -->
+                    <div class="md:col-span-2 border-t border-gray-700 pt-4 mt-2">
+                        <h3 class="text-sm font-bold text-blue-400 mb-3 uppercase">Documentación Inicial (Opcional)</h3>
+                        
+                        <!-- Seguro (SOAP) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <x-input-label for="soap_file" :value="__('Seguro Obligatorio (SOAP)')" class="text-gray-400" />
+                                <input id="soap_file" type="file" name="soap_file" accept=".pdf,image/*" 
+                                    class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="soap_expires" :value="__('Vencimiento SOAP')" class="text-gray-400" />
+                                <x-text-input id="soap_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="soap_expires_at" />
+                            </div>
+                        </div>
+
+                        <!-- Permiso Circulación -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <x-input-label for="permit_file" :value="__('Permiso Circulación')" class="text-gray-400" />
+                                <input id="permit_file" type="file" name="permit_file" accept=".pdf,image/*" 
+                                    class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="permit_expires" :value="__('Vencimiento Permiso')" class="text-gray-400" />
+                                <x-text-input id="permit_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="permit_expires_at" />
+                            </div>
+                        </div>
+
+                        <!-- Revisión Técnica -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="technical_file" :value="__('Revisión Técnica')" class="text-gray-400" />
+                                <input id="technical_file" type="file" name="technical_file" accept=".pdf,image/*" 
+                                    class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="technical_expires" :value="__('Vencimiento Revisión')" class="text-gray-400" />
+                                <x-text-input id="technical_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="technical_expires_at" />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -386,6 +457,15 @@
                         <x-input-error :messages="$errors->get('plate')" class="mt-2" />
                     </div>
 
+                    <!-- Nº Serie -->
+                    <div>
+                        <x-input-label for="edit_serial_number" :value="__('Nº Serie/Chasis')" class="text-gray-300" />
+                        <x-text-input id="edit_serial_number"
+                            class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500"
+                            type="text" name="serial_number" x-model="editingVehicle.serial_number" placeholder="Opcional" />
+                        <x-input-error :messages="$errors->get('serial_number')" class="mt-2" />
+                    </div>
+
                     <!-- Marca -->
                     <div>
                         <x-input-label for="edit_brand" :value="__('Marca')" class="text-gray-300" />
@@ -418,7 +498,8 @@
                         <x-input-label for="edit_mileage" :value="__('Kilometraje')" class="text-gray-300" />
                         <x-text-input id="edit_mileage"
                             class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500"
-                            type="number" name="mileage" x-model="editingVehicle.mileage" required placeholder="0" />
+                            type="text" name="mileage" x-model="editingVehicle.mileage" required placeholder="0" 
+                            x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')" />
                         <x-input-error :messages="$errors->get('mileage')" class="mt-2" />
                     </div>
 
@@ -428,7 +509,7 @@
                         <select id="edit_status" name="status" x-model="editingVehicle.status"
                             class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm">
                             <option value="available">{{ __('Disponible') }}</option>
-                            <option value="workshop">{{ __('En Taller') }}</option>
+                            <option value="out_of_service">{{ __('Fuera de Servicio') }}</option>
                             <option value="maintenance">{{ __('En Mantenimiento') }}</option>
                         </select>
                         <x-input-error :messages="$errors->get('status')" class="mt-2" />
@@ -449,6 +530,50 @@
                         <p class="mt-1 text-xs text-gray-500">Dejar vacío para mantener la actual.</p>
                         <x-input-error :messages="$errors->get('image')" class="mt-2" />
                     </div>
+
+                    <!-- Documentación -->
+                    <div class="md:col-span-2 border-t border-gray-700 pt-4 mt-2">
+                        <h3 class="text-sm font-bold text-blue-400 mb-3 uppercase">Actualizar Documentación</h3>
+                        
+                        <!-- Seguro (SOAP) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <x-input-label for="edit_soap_file" :value="__('Seguro Obligatorio (SOAP)')" class="text-gray-400" />
+                                <input id="edit_soap_file" type="file" name="soap_file" accept=".pdf,image/*" 
+                                    class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="edit_soap_expires" :value="__('Vencimiento SOAP')" class="text-gray-400" />
+                                <x-text-input id="edit_soap_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="soap_expires_at" x-model="editingVehicle.soap_expires_at" />
+                            </div>
+                        </div>
+
+                        <!-- Permiso Circulación -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <x-input-label for="edit_permit_file" :value="__('Permiso Circulación')" class="text-gray-400" />
+                                <input id="edit_permit_file" type="file" name="permit_file" accept=".pdf,image/*" 
+                                    class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="edit_permit_expires" :value="__('Vencimiento Permiso')" class="text-gray-400" />
+                                <x-text-input id="edit_permit_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="permit_expires_at" x-model="editingVehicle.permit_expires_at"/>
+                            </div>
+                        </div>
+
+                        <!-- Revisión Técnica -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="edit_technical_file" :value="__('Revisión Técnica')" class="text-gray-400" />
+                                <input id="edit_technical_file" type="file" name="technical_file" accept=".pdf,image/*" 
+                                    class="block w-full text-sm text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="edit_technical_expires" :value="__('Vencimiento Revisión')" class="text-gray-400" />
+                                <x-text-input id="edit_technical_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="technical_expires_at" x-model="editingVehicle.technical_expires_at" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-6 flex justify-end space-x-3">
@@ -465,7 +590,7 @@
         </x-modal>
 
         <!-- Modal Ver Detalle Vehículo -->
-        <x-modal name="view-vehicle-modal" :show="false" focusable>
+        <x-modal name="view-vehicle-modal" :show="false" focusable zIndex="z-[60]">
             <div class="p-6 bg-gray-800 text-gray-100">
                 <h2 class="text-xl font-bold text-gray-100 mb-6 border-b border-gray-700 pb-2">
                     {{ __('Detalle del Vehículo') }}
@@ -494,6 +619,14 @@
                             <span class="text-2xl font-bold text-white tracking-wider"
                                 x-text="viewingVehicle.plate"></span>
                         </div>
+                        
+                        <template x-if="viewingVehicle.serial_number">
+                            <div>
+                                <span class="block text-xs text-gray-400 uppercase tracking-widest">Nº Serie/Chasis</span>
+                                <span class="text-base text-gray-300 font-mono tracking-wider"
+                                    x-text="viewingVehicle.serial_number"></span>
+                            </div>
+                        </template>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -513,17 +646,72 @@
                             </div>
                             <div>
                                 <span class="block text-xs text-gray-400 uppercase tracking-widest">Kilometraje</span>
-                                <span class="text-lg text-gray-200" x-text="viewingVehicle.mileage + ' km'"></span>
+                                <span class="text-lg text-gray-200" x-text="Number(viewingVehicle.mileage).toLocaleString('es-CL') + ' km'"></span>
                             </div>
                         </div>
 
                         <div>
                             <span class="block text-xs text-gray-400 uppercase tracking-widest mb-1">Estado</span>
                             <span
-                                class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md bg-gray-700 text-gray-200"
-                                x-text="viewingVehicle.status === 'available' ? 'DISPONIBLE' : (viewingVehicle.status === 'workshop' ? 'EN TALLER' : 'MANTENIMIENTO')">
+                                class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md"
+                                :class="{
+                                    'bg-green-900 text-green-200': viewingVehicle.status === 'available',
+                                    'bg-red-900 text-red-200': viewingVehicle.status === 'out_of_service',
+                                    'bg-yellow-900 text-yellow-200': viewingVehicle.status === 'maintenance',
+                                    'bg-blue-900 text-blue-200': viewingVehicle.status === 'occupied'
+                                }"
+                                x-text="viewingVehicle.status === 'available' ? 'DISPONIBLE' : (viewingVehicle.status === 'out_of_service' ? 'FUERA DE SERVICIO' : (viewingVehicle.status === 'maintenance' ? 'MANTENIMIENTO' : 'RESERVADO'))">
                             </span>
                         </div>
+                        
+                        <template x-if="viewingVehicle.status === 'occupied' && viewingVehicle.assigned_user">
+                            <div class="mt-4 border-t border-gray-700 pt-3">
+                                <span class="block text-xs text-blue-400 uppercase tracking-widest mb-2 font-bold">Datos de Asignación</span>
+                                <div class="bg-gray-800 rounded p-3 space-y-2 border border-blue-900/30">
+                                    <div class="flex justify-between">
+                                        <span class="text-xs text-gray-400">Nombre:</span>
+                                        <span class="text-sm font-bold text-white max-w-[150px] truncate" x-text="viewingVehicle.assigned_user"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-xs text-gray-400">RUT:</span>
+                                        <span class="text-sm text-gray-200" x-text="viewingVehicle.assigned_user_rut || 'No registra'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-xs text-gray-400">Teléfono:</span>
+                                        <span class="text-sm text-gray-200 font-mono" x-text="viewingVehicle.assigned_user_phone || 'No registra'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <h3 class="text-lg font-bold text-gray-100 mb-4 border-b border-gray-700 pb-2">Documentación</h3>
+                    
+                    <!-- Lista de Documentos -->
+                    <div class="mb-6">
+                        <template x-if="viewingVehicle.documents && viewingVehicle.documents.length > 0">
+                            <ul class="space-y-2">
+                                <template x-for="doc in viewingVehicle.documents" :key="doc.id">
+                                    <li class="flex items-center justify-between bg-gray-900 p-3 rounded-md border border-gray-700">
+                                        <div class="flex items-center">
+                                            <span x-text="doc.type === 'insurance' ? '🛡️ Seguro' : (doc.type === 'technical_review' ? '🔧 Revisión Técnica' : '📄 Permiso Circulación')" 
+                                                  class="text-sm font-medium text-gray-200 mr-2"></span>
+                                            <span x-text="'(Vence: ' + (doc.expires_at ? doc.expires_at.split('T')[0].split('-').reverse().join('/') : '') + ')'" class="text-xs text-gray-400"></span>
+                                            <span x-show="new Date(doc.expires_at) < new Date()" class="ml-2 text-xs font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded">VENCIDO</span>
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <a :href="'/storage/' + doc.file_path" target="_blank" class="text-blue-400 hover:text-blue-300 text-sm">Ver</a>
+                                            <!-- Delete button logic requires a form, might be complex in view-only modal -->
+                                        </div>
+                                    </li>
+                                </template>
+                            </ul>
+                        </template>
+                        <template x-if="!viewingVehicle.documents || viewingVehicle.documents.length === 0">
+                            <p class="text-gray-500 text-sm italic">No hay documentos registrados.</p>
+                        </template>
                     </div>
                 </div>
 
@@ -573,6 +761,8 @@
                                             type="text" name="last_oil_change_km"
                                             x-model="maintenanceVehicle.last_oil_change_km"
                                             x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
+                                            x-bind:disabled="maintenanceVehicle.oil_change_due && !['maintenance', 'workshop'].includes(maintenanceVehicle.status)"
+                                            x-bind:class="{'opacity-50 cursor-not-allowed': maintenanceVehicle.oil_change_due && !['maintenance', 'workshop'].includes(maintenanceVehicle.status)}"
                                             placeholder="0" />
                                     </div>
                                     <div>
@@ -586,6 +776,8 @@
                                                 type="text" name="next_oil_change_km"
                                                 x-model="maintenanceVehicle.next_oil_change_km"
                                                 x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"
+                                                x-bind:disabled="maintenanceVehicle.oil_change_due && !['maintenance', 'workshop'].includes(maintenanceVehicle.status)"
+                                                x-bind:class="{'opacity-50 cursor-not-allowed': maintenanceVehicle.oil_change_due && !['maintenance', 'workshop'].includes(maintenanceVehicle.status)}"
                                                 placeholder="10.000" />
                                             <template x-if="maintenanceVehicle.oil_change_due">
                                                 <span
@@ -641,21 +833,25 @@
                     </form>
 
                     <div class="mt-8 flex justify-end space-x-3">
-                        <form x-show="maintenanceVehicle.status === 'maintenance' || maintenanceVehicle.status === 'workshop'" 
-                            method="POST" :action="maintenanceVehicle.completeAction" class="mr-auto">
-                            @csrf
-                            <x-primary-button class="bg-green-600 hover:bg-green-700 border-transparent">
-                                ✅ {{ __('Finalizar Mantenimiento') }}
-                            </x-primary-button>
-                        </form>
-
                         <x-secondary-button @click="$dispatch('close')"
                             class="bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600">
                             {{ __('Cancelar') }}
                         </x-secondary-button>
-                        <x-primary-button form="update-maintenance-state-form" class="bg-blue-600 hover:bg-blue-700 border-transparent">
-                            {{ __('Actualizar Estado') }}
-                        </x-primary-button>
+
+                        <template x-if="!['maintenance', 'workshop'].includes(maintenanceVehicle.status)">
+                            <x-primary-button form="update-maintenance-state-form" 
+                                class="bg-blue-600 hover:bg-blue-700 border-transparent">
+                                {{ __('Actualizar Estado') }}
+                            </x-primary-button>
+                        </template>
+
+                        <template x-if="maintenanceVehicle.status === 'maintenance' || maintenanceVehicle.status === 'workshop'">
+                            <x-primary-button form="update-maintenance-state-form" 
+                                ::formaction="maintenanceVehicle.completeAction"
+                                class="bg-green-600 hover:bg-green-700 border-transparent ml-auto">
+                                ✅ {{ __('Finalizar Mantenimiento') }}
+                            </x-primary-button>
+                        </template>
                     </div>
                 </div>
 
@@ -698,7 +894,7 @@
             </div>
         </x-modal>
         <!-- Modal Solicitudes Pendientes -->
-        <x-modal name="maintenance-requests-modal" :show="false" focusable>
+        <x-modal name="maintenance-requests-modal" :show="false" focusable maxWidth="6xl">
             <div class="p-6 bg-gray-800 text-gray-100">
                 <h2 class="text-lg font-medium text-gray-100 mb-4 flex items-center">
                     <svg class="w-6 h-6 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -718,6 +914,7 @@
                                         <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Foto</th>
                                         <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Usuario</th>
                                         <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Vehículo</th>
+                                        <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Destino</th>
                                         <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Desde</th>
                                         <th class="px-4 py-3 bg-gray-900 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Hasta</th>
                                         <th class="px-4 py-3 bg-gray-900 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Acciones</th>
@@ -747,13 +944,61 @@
                                                 {{ $reservation->user->name }}
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
-                                                {{ $reservation->vehicle->brand }} {{ $reservation->vehicle->model }}
+                                                @php
+                                                    $soap = $reservation->vehicle->documents->firstWhere('type', 'insurance');
+                                                    $permit = $reservation->vehicle->documents->firstWhere('type', 'permit');
+                                                    $technical = $reservation->vehicle->documents->firstWhere('type', 'technical_review');
+                                                    
+                                                    $reqJsVehicle = [
+                                                        'id' => $reservation->vehicle->id,
+                                                        'plate' => $reservation->vehicle->plate,
+                                                        'serial_number' => $reservation->vehicle->serial_number,
+                                                        'brand' => $reservation->vehicle->brand,
+                                                        'model' => $reservation->vehicle->model,
+                                                        'year' => $reservation->vehicle->year,
+                                                        'mileage' => $reservation->vehicle->mileage,
+                                                        'status' => $reservation->vehicle->status,
+                                                        'image_url' => $reservation->vehicle->image_path ? Storage::url($reservation->vehicle->image_path) : '',
+                                                        'imageUrl' => $reservation->vehicle->image_path ? Storage::url($reservation->vehicle->image_path) : '',
+                                                        'documents' => $reservation->vehicle->documents,
+                                                        'assigned_user' => $reservation->user->name, // Emulate assignment for this view
+                                                        'assigned_user_rut' => $reservation->user->rut ?? '',
+                                                        'assigned_user_phone' => $reservation->user->phone ?? '',
+                                                    ];
+                                                    $reqJsonVehicle = json_encode($reqJsVehicle);
+                                                @endphp
+                                                <div class="flex items-center">
+                                                    <button @click="viewingVehicle = {{ $reqJsonVehicle }}; $dispatch('open-modal', 'view-vehicle-modal')" 
+                                                            class="focus:outline-none transform hover:scale-110 transition-transform duration-200 cursor-pointer"
+                                                            title="Ver Detalle Grande">
+                                                        @if($reservation->vehicle->image_path)
+                                                            <img src="{{ asset('storage/' . $reservation->vehicle->image_path) }}" alt="Vehículo" class="h-10 w-10 rounded-full object-cover mr-3 border border-gray-600 hover:border-blue-500">
+                                                        @else
+                                                            <div class="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center mr-3 border border-gray-600 hover:border-blue-500">
+                                                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                </svg>
+                                                            </div>
+                                                        @endif
+                                                    </button>
+                                                    <div>
+                                                        <div class="font-bold text-white">{{ $reservation->vehicle->brand }} {{ $reservation->vehicle->model }}</div>
+                                                        <div class="text-xs text-gray-500 font-mono">{{ $reservation->vehicle->plate }}</div>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
-                                                {{ $reservation->start_date->format('d/m H:i') }}
+                                                @if($reservation->destination_type === 'outside')
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">Fuera Ciudad</span>
+                                                @else
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Local</span>
+                                                @endif
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
-                                                {{ $reservation->end_date->format('d/m H:i') }}
+                                                {{ $reservation->start_date->format('d/m/Y H:i') }}
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                                {{ $reservation->end_date->format('d/m/Y H:i') }}
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                                                 <div class="flex justify-end space-x-2">
@@ -855,6 +1100,89 @@
 
                 <div class="mt-6 flex justify-center">
                     <x-secondary-button @click="$dispatch('close')" class="bg-indigo-600 text-white hover:bg-indigo-500 border-transparent px-8 py-2">
+                        {{ __('Cerrar') }}
+                    </x-secondary-button>
+                </div>
+            </div>
+        </x-modal>
+        <!-- Modal Gestionar Documentos -->
+        <x-modal name="manage-documents-modal" :show="false" focusable>
+            <div class="p-6 bg-gray-800 text-gray-100" x-data="{ activeTab: 'list' }">
+                <h2 class="text-xl font-bold text-gray-100 mb-6 border-b border-gray-700 pb-2">
+                    {{ __('Gestión Documental') }}
+                </h2>
+
+                <div class="mb-6 bg-gray-900 p-4 rounded-lg">
+                     <p class="text-sm text-gray-400">Vehículo: <span class="font-bold text-white" x-text="viewingVehicle.brand + ' ' + viewingVehicle.model"></span></p>
+                     <p class="text-sm text-gray-400">Patente: <span class="font-bold text-white" x-text="viewingVehicle.plate"></span></p>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex space-x-4 mb-4 border-b border-gray-700">
+                    <button @click="activeTab = 'list'" :class="{ 'border-b-2 border-blue-500 text-blue-400': activeTab === 'list', 'text-gray-400': activeTab !== 'list' }" class="pb-2 text-sm font-medium">Documentos Actuales</button>
+                    <button @click="activeTab = 'upload'" :class="{ 'border-b-2 border-blue-500 text-blue-400': activeTab === 'upload', 'text-gray-400': activeTab !== 'upload' }" class="pb-2 text-sm font-medium">Subir Nuevo</button>
+                </div>
+
+                <!-- Lista -->
+                <div x-show="activeTab === 'list'">
+                    <template x-if="viewingVehicle.documents && viewingVehicle.documents.length > 0">
+                        <ul class="space-y-3">
+                            <template x-for="doc in viewingVehicle.documents" :key="doc.id">
+                                <li class="flex items-center justify-between bg-gray-700 p-3 rounded border border-gray-600">
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-200" x-text="doc.type === 'insurance' ? 'Seguro' : (doc.type === 'technical_review' ? 'Revisión Técnica' : 'Permiso Circulación')"></p>
+                                        <p class="text-xs text-gray-400">Vence: <span x-text="doc.expires_at ? doc.expires_at.split('T')[0].split('-').reverse().join('/') : ''"></span></p>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <a :href="'/storage/' + doc.file_path" target="_blank" class="text-blue-400 hover:text-blue-300 text-xs uppercase font-bold">Ver</a>
+                                        
+                                        <form method="POST" :action="'/vehicles/documents/' + doc.id">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold bg-transparent border-0 cursor-pointer">Eliminar</button>
+                                        </form>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                    <template x-if="!viewingVehicle.documents || viewingVehicle.documents.length === 0">
+                        <div class="text-center py-8 text-gray-500">No hay documentos cargados.</div>
+                    </template>
+                </div>
+
+                <!-- Subir -->
+                <div x-show="activeTab === 'upload'">
+                    <form method="POST" :action="'/vehicles/' + viewingVehicle.id + '/documents'" enctype="multipart/form-data" class="space-y-4">
+                        @csrf
+                        <div>
+                            <x-input-label for="doc_type" :value="__('Tipo de Documento')" class="text-gray-400" />
+                            <select id="doc_type" name="type" required class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="insurance">Seguro Obligatorio (SOAP)</option>
+                                <option value="technical_review">Revisión Técnica</option>
+                                <option value="permit">Permiso de Circulación</option>
+                                <option value="other">Otro</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <x-input-label for="doc_expires" :value="__('Fecha de Vencimiento')" class="text-gray-400" />
+                            <x-text-input id="doc_expires" class="block mt-1 w-full bg-gray-900 border-gray-700 text-gray-100" type="date" name="expires_at" required />
+                        </div>
+
+                        <div>
+                            <x-input-label for="doc_file" :value="__('Archivo (PDF/Imagen)')" class="text-gray-400" />
+                            <input id="doc_file" type="file" name="file" required accept=".pdf,image/*" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-900 border border-gray-700 rounded-md" />
+                        </div>
+
+                        <div class="pt-4 flex justify-end">
+                            <x-primary-button class="bg-blue-600 hover:bg-blue-700">Subir Documento</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <x-secondary-button @click="$dispatch('close')" class="bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600">
                         {{ __('Cerrar') }}
                     </x-secondary-button>
                 </div>

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
 use App\Models\VehicleRequest;
+use App\Models\VehicleReturn;
+use App\Models\VehicleMaintenanceState;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,6 +29,20 @@ class VehicleRequestController extends Controller
      */
     public function create()
     {
+        $user = Auth::user();
+
+        // 1. Verificar si tiene licencia registrada
+        if (!$user->license_expires_at) {
+            return redirect()->route('profile.edit')
+                ->with('error', 'Para solicitar un vehículo, primero debe registrar su Licencia de Conducir en su perfil.');
+        }
+
+        // 2. Verificar si está vencida
+        if ($user->license_expires_at < now()->startOfDay()) {
+            return redirect()->route('profile.edit')
+                ->with('error', 'Su Licencia de Conducir está vencida. Por favor actualice el documento para continuar.');
+        }
+
         $vehicles = Vehicle::where('status', '!=', 'workshop')
             ->where('status', '!=', 'maintenance')
             ->get();
@@ -42,7 +58,14 @@ class VehicleRequestController extends Controller
             'vehicle_id' => 'required|exists:vehicles,id',
             'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after:start_date',
+            'destination_type' => 'required|in:local,outside',
         ]);
+
+        $user = Auth::user();
+        if (!$user->license_expires_at || $user->license_expires_at < now()->startOfDay()) {
+            return redirect()->route('profile.edit')
+                ->with('error', 'Su licencia de conducir no es válida o no está registrada.');
+        }
 
         $vehicle = Vehicle::findOrFail($request->vehicle_id);
 
@@ -56,6 +79,7 @@ class VehicleRequestController extends Controller
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'status' => 'pending',
+            'destination_type' => $request->destination_type,
         ]);
 
         return redirect()->route('requests.create')->with('success', 'Solicitud enviada correctamente. Esperando aprobación.');
@@ -91,30 +115,78 @@ class VehicleRequestController extends Controller
     }
 
     /**
-     * Finaliza una reserva (Devolución del vehículo).
+     * Finaliza una reserva (Devolución del vehículo) con checklist detallado.
      */
     public function complete(Request $request, $id)
     {
         $vehicleRequest = VehicleRequest::with('vehicle')->where('user_id', Auth::id())->findOrFail($id);
 
-        $request->validate([
-            'return_mileage' => 'required|integer|min:' . $vehicleRequest->vehicle->mileage,
-        ]);
-
-        // Actualizar kilometraje del vehículo si es mayor al actual
-        if ($request->return_mileage > $vehicleRequest->vehicle->mileage) {
-            $vehicleRequest->vehicle->update(['mileage' => $request->return_mileage]);
+        // Limpiar formato de kilometraje (eliminar puntos)
+        if ($request->has('return_mileage')) {
+            $request->merge([
+                'return_mileage' => (int) str_replace('.', '', $request->return_mileage)
+            ]);
         }
 
-        $vehicleRequest->vehicle->update([
-            'status' => 'available' 
+        $request->validate([
+            'return_mileage' => 'required|integer|min:' . $vehicleRequest->vehicle->mileage,
+            'fuel_level' => 'required|in:1/4,1/2,3/4,full',
+            'tire_status_front' => 'required|in:good,fair,poor',
+            'tire_status_rear' => 'required|in:good,fair,poor',
+            'cleanliness' => 'required|in:clean,dirty,very_dirty',
+            'body_damage_reported' => 'nullable|boolean',
+            'photos' => 'nullable|array|max:5',
+            'photos.*' => 'image|max:10240', // Max 10MB per photo
+            'comments' => 'nullable|string|max:1000',
         ]);
-        
+
+        // Procesar fotos si existen
+        $photoPaths = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                // Generar nombre unico: return_{reqId}_{timestamp}_{uniqid}.jpg
+                $filename = 'return_' . $vehicleRequest->id . '_' . time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
+                $path = $photo->storeAs('returns', $filename, 'public');
+                $photoPaths[] = $path;
+            }
+        }
+
+        // Crear registro de devolución
+        VehicleReturn::create([
+            'vehicle_request_id' => $vehicleRequest->id,
+            'return_mileage' => $request->return_mileage,
+            'fuel_level' => $request->fuel_level,
+            'tire_status_front' => $request->tire_status_front,
+            'tire_status_rear' => $request->tire_status_rear,
+            'cleanliness' => $request->cleanliness,
+            'body_damage_reported' => $request->has('body_damage_reported'),
+            'comments' => $request->comments,
+            'photos_paths' => $photoPaths, // Casted to array in model
+        ]);
+
+        // Actualizar vehículo
+        $vehicleRequest->vehicle->update([
+            'mileage' => $request->return_mileage,
+            'status' => 'available'
+        ]);
+
+        // Actualizar estado de mantenimiento del vehículo (Neumáticos)
+        // Buscamos o creamos el estado de mantenimiento
+        $maintenanceState = VehicleMaintenanceState::firstOrCreate(
+            ['vehicle_id' => $vehicleRequest->vehicle_id]
+        );
+
+        $maintenanceState->update([
+            'tire_status_front' => $request->tire_status_front,
+            'tire_status_rear' => $request->tire_status_rear,
+        ]);
+
+        // Finalizar solicitud
         $vehicleRequest->update([
             'status' => 'completed',
             'return_mileage' => $request->return_mileage
         ]);
 
-        return back()->with('success', 'Vehículo devuelto correctamente. Kilometraje actualizado.');
+        return back()->with('success', 'Devolución registrada correctamente. Historial actualizado.');
     }
 }

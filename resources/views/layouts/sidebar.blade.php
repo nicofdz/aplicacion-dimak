@@ -52,6 +52,17 @@
                 </svg>
                 <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Gestión de Usuarios</span>
             </a>
+
+            <!-- Historial Entregas -->
+            <a href="{{ route('admin.returns.index') }}"
+                class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"
+                :class="{'justify-center': !open, 'bg-gray-800 text-white': {{ request()->routeIs('admin.returns.*') ? 'true' : 'false' }}}">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                <span x-show="open" class="ml-3 whitespace-nowrap" x-transition:enter="delay-75">Historial Entregas</span>
+            </a>
         @endif
 
         <!-- Vehículos -->

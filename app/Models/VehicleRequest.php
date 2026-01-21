@@ -16,6 +16,7 @@ class VehicleRequest extends Model
         'end_date',
         'status',
         'return_mileage',
+        'destination_type',
     ];
 
     /**
