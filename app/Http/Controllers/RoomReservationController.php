@@ -7,6 +7,10 @@ use App\Models\RoomReservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Models\User;
+use App\Notifications\NewReservationRequest;
+use App\Notifications\ReservationConfirmed;
+use Illuminate\Support\Facades\Notification;
 
 class RoomReservationController extends Controller
 {
@@ -38,27 +42,33 @@ class RoomReservationController extends Controller
         
         $request->validate([
             'meeting_room_id' => 'required|exists:meeting_rooms,id',
-            'start_time' => 'required|date|after:now',
-            'end_time' => 'required|date|after:start_time',
+            'start_time' => 'required|date',
+            'end_time' => 'required|date',
             'purpose' => 'required|string|max:255',
             'attendees' => 'required|integer|min:1', 
             'resources' => 'nullable|string|max:500',
+        
         ]);
+        $timezone = 'America/Santiago';
 
-        $start = Carbon::parse($request->start_time);
-        $end = Carbon::parse($request->end_time);
+        $start = Carbon::parse($request->start_time, $timezone);
+        $end = Carbon::parse($request->end_time, $timezone);
+        $now = Carbon::now($timezone);
 
+        if ($start->lt($now->subMinute())) {
+            return back()->withErrors(['start_time' => '⚠️ No puedes reservar en una fecha u hora pasada (Hora actual: ' . $now->format('H:i') . ').']);
+        }
+
+        if ($end->lte($start)) {
+            return back()->withErrors(['end_time' => '⚠️ La hora de término debe ser después del inicio.']);
+        }
         
         $exists = RoomReservation::where('meeting_room_id', $request->meeting_room_id)
-            ->where('status', '!=', 'rejected') 
-            ->where('status', '!=', 'cancelled')
+            ->where('status', 'approved')
             ->where(function ($query) use ($start, $end) {
-                $query->whereBetween('start_time', [$start, $end])
-                      ->orWhereBetween('end_time', [$start, $end])
-                      ->orWhere(function ($q) use ($start, $end) {
-                          $q->where('start_time', '<', $start)
-                            ->where('end_time', '>', $end);
-                      });
+                $query->where('start_time', '<', $end)
+                      ->where('end_time', '>', $start);
+                      
             })
             ->exists();
 
@@ -67,16 +77,19 @@ class RoomReservationController extends Controller
         }
 
       
-        RoomReservation::create([
+        $reservation = RoomReservation::create([
             'user_id' => Auth::id(),
             'meeting_room_id' => $request->meeting_room_id,
-            'start_time' => $request->start_time,
-            'end_time' => $request->end_time,
+            'start_time' => $start, 
+            'end_time' => $end,
             'purpose' => $request->purpose,
             'attendees' => $request->attendees,
             'resources' => $request->resources,
             'status' => 'pending' 
         ]);
+
+        $admins = User::where('role', 'admin')->get(); 
+        Notification::send($admins, new NewReservationRequest($reservation));
 
         return redirect()->route('reservations.my_reservations')->with('success', 'Solicitud enviada correctamente.');
     }
@@ -86,8 +99,28 @@ class RoomReservationController extends Controller
     {
         $reservation = RoomReservation::findOrFail($id);
         
+        $start = Carbon::parse($reservation->start_time);
+        $end = Carbon::parse($reservation->end_time);
+
+     
+        $exists = RoomReservation::where('meeting_room_id', $reservation->meeting_room_id)
+            ->where('status', 'approved') 
+            ->where('id', '!=', $id) 
+            ->where(function ($query) use ($start, $end) {
+               
+                $query->where('start_time', '<', $end)
+                      ->where('end_time', '>', $start);
+            })
+            ->exists();
+
+        
+        if ($exists) {
+            return redirect()->back()->with('error', '⛔ No se puede aprobar: Ya existe otra reserva confirmada en este horario.');
+        }
+
         $reservation->status = 'approved';
         $reservation->save();
+        $reservation->user->notify(new ReservationConfirmed($reservation));
 
         return redirect()->back()->with('success', 'Reserva aprobada con éxito.');
     }
@@ -123,7 +156,7 @@ class RoomReservationController extends Controller
             abort(403, 'No tienes permiso para cancelar esta reserva.');
         }
 
-        // Solo permitir cancelar si no ha pasado la fecha (opcional) o si está pendiente/aprobada
+       
         if ($reservation->status === 'cancelled') {
             return redirect()->back()->with('error', 'La reserva ya estaba cancelada.');
         }
@@ -138,7 +171,7 @@ class RoomReservationController extends Controller
     {
         
         $reservations = $room->reservations()
-            ->whereIn('status', ['approved', 'pending'])
+            ->whereIn('status', ['approved'])
             ->where('start_time', '>=', now()->startOfMonth()->subDays(7))
             ->get() 
             ->map(function ($res) {
@@ -154,5 +187,15 @@ class RoomReservationController extends Controller
             });
 
         return response()->json($reservations);
+    }
+
+    public function history()
+    {
+        $reservations = RoomReservation::with(['user', 'meetingRoom'])
+            ->whereIn('status', ['approved', 'cancelled'])
+            ->orderBy('start_time', 'desc') 
+            ->paginate(20); 
+
+        return view('rooms.history', compact('reservations'));
     }
 }

@@ -76,7 +76,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/room-reservations/{id}/reject', [RoomReservationController::class, 'reject'])->name('room-reservations.reject');
 
     Route::get('/rooms/{room}/availability', [App\Http\Controllers\RoomReservationController::class, 'availability'])->name('rooms.availability');
-
+    // Historial de Reservas
+    Route::get('/admin/rooms/history', [RoomReservationController::class, 'history'])->name('rooms.history');
+    
     // Rutas de Mantenimiento
     Route::post('vehiculos/{vehicle}/maintenance/state', [MaintenanceController::class, 'updateState'])->name('vehicles.maintenance.state');
     Route::post('vehiculos/{vehicle}/maintenance/request', [MaintenanceController::class, 'storeRequest'])->name('vehicles.maintenance.request');

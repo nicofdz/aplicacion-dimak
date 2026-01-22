@@ -22,6 +22,17 @@
                 </div>
             @endif
 
+            @if($errors->any())
+                <div class="mb-6 bg-red-900 border border-red-500 text-red-200 px-4 py-3 rounded relative">
+                    <strong class="font-bold">¡Atención!</strong>
+                    <ul class="list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($rooms as $room)
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition duration-300 flex flex-col">

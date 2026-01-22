@@ -21,6 +21,10 @@ class NotificationController extends Controller
             return redirect()->route('vehicles.index')->with('success', 'Redirigiendo a vehículo...');
         }
 
+        if (isset($notification->data['action_url'])) {
+            return redirect($notification->data['action_url']);
+        }
+
         return back();
     }
 
@@ -30,5 +34,10 @@ class NotificationController extends Controller
         $notification->delete();
 
         return back()->with('success', 'Notificación eliminada.');
+    }
+    public function markAllRead()
+    {
+        Auth::user()->unreadNotifications->markAsRead();
+        return back();
     }
 }
