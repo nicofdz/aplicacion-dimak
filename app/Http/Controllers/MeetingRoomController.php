@@ -12,7 +12,12 @@ class MeetingRoomController extends Controller
     public function index()
     {
         $rooms = MeetingRoom::all();
-        return view('rooms.index', compact('rooms'));
+        $pendingReservations = \App\Models\RoomReservation::where('status', 'pending')
+            ->with(['user', 'meetingRoom']) 
+            ->orderBy('start_time', 'asc')
+            ->get();
+        
+        return view('rooms.index', compact('rooms', 'pendingReservations'));        
     }
 
     

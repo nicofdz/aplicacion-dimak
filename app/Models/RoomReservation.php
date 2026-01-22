@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class RoomReservation extends Model
 {
@@ -28,7 +29,11 @@ class RoomReservation extends Model
     {
         return $this->belongsTo(User::class);
     }
-
+    
+    public function meetingRoom()
+    {
+        return $this->belongsTo(MeetingRoom::class);
+    }
    
     public function room()
     {

@@ -10,6 +10,7 @@ use App\Http\Controllers\ForceChangePasswordController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleReturnController;
 use App\Http\Controllers\MeetingRoomController;
+use App\Http\Controllers\RoomReservationController;
 
 // Página de inicio
 Route::get('/', function () {
@@ -62,8 +63,19 @@ Route::middleware('auth')->group(function () {
     Route::get('rooms/trash', [MeetingRoomController::class, 'trash'])->name('rooms.trash');
     Route::put('rooms/{id}/restore', [MeetingRoomController::class, 'restore'])->name('rooms.restore');
     Route::delete('rooms/{id}/force-delete', [MeetingRoomController::class, 'forceDelete'])->name('rooms.force-delete');
-
+    
     Route::resource('rooms', MeetingRoomController::class);
+
+    Route::get('/reservar-sala', [RoomReservationController::class, 'index'])->name('reservations.catalog');
+    Route::post('/reservar-sala', [RoomReservationController::class, 'store'])->name('reservations.store');
+
+    Route::get('/mis-reservas-salas', [RoomReservationController::class, 'myReservations'])->name('reservations.my_reservations');
+    Route::put('/mis-reservas-salas/{id}/cancel', [RoomReservationController::class, 'cancel'])->name('reservations.cancel');
+
+    Route::put('/room-reservations/{id}/approve', [RoomReservationController::class, 'approve'])->name('room-reservations.approve');
+    Route::put('/room-reservations/{id}/reject', [RoomReservationController::class, 'reject'])->name('room-reservations.reject');
+
+    Route::get('/rooms/{room}/availability', [App\Http\Controllers\RoomReservationController::class, 'availability'])->name('rooms.availability');
 
     // Rutas de Mantenimiento
     Route::post('vehiculos/{vehicle}/maintenance/state', [MaintenanceController::class, 'updateState'])->name('vehicles.maintenance.state');
