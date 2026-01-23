@@ -197,4 +197,54 @@ class VehicleRequestController extends Controller
 
         return back()->with('success', 'Devolución registrada correctamente. Historial actualizado.');
     }
+
+    /**
+     * Muestra el historial de uso de vehículos con filtros.
+     */
+    public function history(Request $request)
+    {
+        $query = VehicleRequest::with(['user', 'vehicle', 'conductor'])
+            ->orderBy('start_date', 'desc');
+
+        // Filtro por rango de fechas (día, mes, año)
+        if ($request->filled('filter_type') && $request->filled('filter_value')) {
+            $filterType = $request->filter_type;
+            $filterValue = $request->filter_value;
+
+            if ($filterType === 'day') {
+                $query->whereDate('start_date', $filterValue);
+            } elseif ($filterType === 'month') {
+                $query->whereYear('start_date', substr($filterValue, 0, 4))
+                    ->whereMonth('start_date', substr($filterValue, 5, 2));
+            } elseif ($filterType === 'year') {
+                $query->whereYear('start_date', $filterValue);
+            }
+        }
+
+        // Filtro por cargo
+        if ($request->filled('cargo')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('cargo', $request->cargo);
+            });
+        }
+
+        // Búsqueda por nombre de empleado (exacta)
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->whereHas('user', function ($q) use ($searchTerm) {
+                $q->where('name', $searchTerm);
+            });
+        }
+
+        $requests = $query->paginate(15)->withQueryString();
+
+        // Obtener lista única de cargos para el filtro
+        $cargos = \App\Models\User::whereNotNull('cargo')
+            ->distinct()
+            ->pluck('cargo')
+            ->sort()
+            ->values();
+
+        return view('requests.history', compact('requests', 'cargos'));
+    }
 }

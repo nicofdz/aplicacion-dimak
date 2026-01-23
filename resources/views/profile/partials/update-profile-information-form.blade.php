@@ -266,105 +266,145 @@
                 </div>
             </div>
 
-        <!-- Name -->
-        <div>
-            <x-input-label for="name" :value="__('Nombre')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required
-                autofocus autocomplete="name" />
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
-        <!-- RUT -->
-        <div x-data="{
-            rut: '{{ old('rut', $user->rut) }}',
-            error: '',
-            formatRut() {
-                let value = this.rut.replace(/[^0-9kK]/g, '').toUpperCase();
-                if (value.length > 1) {
-                    const dv = value.slice(-1);
-                    let body = value.slice(0, -1);
-                    body = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                    this.rut = body + '-' + dv;
-                } else {
-                    this.rut = value;
-                }
-                this.validateRut();
-            },
-            validateRut() {
-                let value = this.rut.replace(/[^0-9kK]/g, '').toUpperCase();
-                if (value.length < 8) {
-                    this.error = ''; // Demasiado corto para validar aún
-                    return;
-                }
-                const body = value.slice(0, -1);
-                const dv = value.slice(-1);
-                let suma = 0;
-                let multiplo = 2;
-                for (let i = body.length - 1; i >= 0; i--) {
-                    suma += multiplo * body.charAt(i);
-                    multiplo = (multiplo + 1) % 8 || 2;
-                }
-                const calculado = 11 - (suma % 11);
-                const dvCalculado = calculado === 11 ? '0' : (calculado === 10 ? 'K' : calculado.toString());
-                
-                if (dv !== dvCalculado) {
-                    this.error = 'RUT inválido';
-                    document.getElementById('rut').setCustomValidity('RUT inválido');
-                } else {
-                    this.error = '';
-                    document.getElementById('rut').setCustomValidity('');
-                }
-            }
-        }">
-            <x-input-label for="rut" :value="__('RUT')" />
-            <x-text-input id="rut" name="rut" type="text" class="mt-1 block w-full" 
-                x-model="rut" 
-                @input="formatRut()" 
-                placeholder="12.345.678-9" 
-                maxlength="12" />
-            <p x-show="error" x-text="error" class="text-sm text-red-600 mt-1"></p>
-            <x-input-error class="mt-2" :messages="$errors->get('rut')" />
-        </div>
-
-        <!-- Phone -->
-        <div>
-            <x-input-label for="phone" :value="__('Teléfono')" />
-            <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full" :value="old('phone', $user->phone)"
-                placeholder="+56 9 1234 5678" />
-            <x-input-error class="mt-2" :messages="$errors->get('phone')" />
-        </div>
-
-        <!-- Address -->
-        <div>
-            <x-input-label for="address" :value="__('Dirección')" />
-            <x-text-input id="address" name="address" type="text" class="mt-1 block w-full" :value="old('address', $user->address)"
-                placeholder="Av. Siempre Viva 742" />
-            <x-input-error class="mt-2" :messages="$errors->get('address')" />
-        </div>
-
-        <div>
-            <x-input-label for="email" :value="__('Correo Electrónico')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
-
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && !$user->hasVerifiedEmail())
+        <!-- Información Personal Section -->
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Información Personal') }}</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Name -->
                 <div>
-                    <p class="text-sm mt-2 text-gray-800 dark:text-gray-200">
-                        {{ __('Su dirección de correo electrónico no está verificada.') }}
+                    <x-input-label for="name" :value="__('Nombre')" />
+                    <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required
+                        autofocus autocomplete="name" />
+                    <x-input-error class="mt-2" :messages="$errors->get('name')" />
+                </div>
 
-                        <button form="send-verification"
-                            class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
-                            {{ __('Haga clic aquí para re-enviar el correo de verificación.') }}
-                        </button>
-                    </p>
+                <!-- RUT -->
+                <div x-data="{
+                    rut: '{{ old('rut', $user->rut) }}',
+                    error: '',
+                    formatRut() {
+                        let value = this.rut.replace(/[^0-9kK]/g, '').toUpperCase();
+                        if (value.length > 1) {
+                            const dv = value.slice(-1);
+                            let body = value.slice(0, -1);
+                            body = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                            this.rut = body + '-' + dv;
+                        } else {
+                            this.rut = value;
+                        }
+                        this.validateRut();
+                    },
+                    validateRut() {
+                        let value = this.rut.replace(/[^0-9kK]/g, '').toUpperCase();
+                        if (value.length < 8) {
+                            this.error = '';
+                            return;
+                        }
+                        const body = value.slice(0, -1);
+                        const dv = value.slice(-1);
+                        let suma = 0;
+                        let multiplo = 2;
+                        for (let i = body.length - 1; i >= 0; i--) {
+                            suma += multiplo * body.charAt(i);
+                            multiplo = (multiplo + 1) % 8 || 2;
+                        }
+                        const calculado = 11 - (suma % 11);
+                        const dvCalculado = calculado === 11 ? '0' : (calculado === 10 ? 'K' : calculado.toString());
+                        
+                        if (dv !== dvCalculado) {
+                            this.error = 'RUT inválido';
+                            document.getElementById('rut').setCustomValidity('RUT inválido');
+                        } else {
+                            this.error = '';
+                            document.getElementById('rut').setCustomValidity('');
+                        }
+                    }
+                }">
+                    <x-input-label for="rut" :value="__('RUT')" />
+                    <x-text-input id="rut" name="rut" type="text" class="mt-1 block w-full" 
+                        x-model="rut" 
+                        @input="formatRut()" 
+                        placeholder="12.345.678-9" 
+                        maxlength="12" />
+                    <p x-show="error" x-text="error" class="text-sm text-red-600 mt-1"></p>
+                    <x-input-error class="mt-2" :messages="$errors->get('rut')" />
+                </div>
 
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600 dark:text-green-400">
-                            {{ __('Se ha enviado un nuevo enlace de verificación a su dirección de correo.') }}
-                        </p>
+                <!-- Email -->
+                <div class="md:col-span-2">
+                    <x-input-label for="email" :value="__('Correo Electrónico')" />
+                    <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
+                    <x-input-error class="mt-2" :messages="$errors->get('email')" />
+
+                    @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && !$user->hasVerifiedEmail())
+                        <div>
+                            <p class="text-sm mt-2 text-gray-800 dark:text-gray-200">
+                                {{ __('Su dirección de correo electrónico no está verificada.') }}
+
+                                <button form="send-verification"
+                                    class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
+                                    {{ __('Haga clic aquí para re-enviar el correo de verificación.') }}
+                                </button>
+                            </p>
+
+                            @if (session('status') === 'verification-link-sent')
+                                <p class="mt-2 font-medium text-sm text-green-600 dark:text-green-400">
+                                    {{ __('Se ha enviado un nuevo enlace de verificación a su dirección de correo.') }}
+                                </p>
+                            @endif
+                        </div>
                     @endif
                 </div>
-            @endif
+            </div>
+        </div>
+
+        <!-- Información de Contacto Section -->
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Información de Contacto') }}</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Phone -->
+                <div>
+                    <x-input-label for="phone" :value="__('Teléfono')" />
+                    <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full" :value="old('phone', $user->phone)"
+                        placeholder="+56 9 1234 5678" />
+                    <x-input-error class="mt-2" :messages="$errors->get('phone')" />
+                </div>
+
+                <!-- Address (full width) -->
+                <div class="md:col-span-2">
+                    <x-input-label for="address" :value="__('Dirección')" />
+                    <x-text-input id="address" name="address" type="text" class="mt-1 block w-full" :value="old('address', $user->address)"
+                        placeholder="Av. Siempre Viva 742" />
+                    <x-input-error class="mt-2" :messages="$errors->get('address')" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Información Laboral Section -->
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __('Información Laboral') }}</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Cargo -->
+                <div>
+                    <x-input-label for="cargo" :value="__('Cargo')" />
+                    <x-text-input id="cargo" name="cargo" type="text" class="mt-1 block w-full" :value="old('cargo', $user->cargo)"
+                        placeholder="Ej: Gerente de Operaciones" />
+                    <x-input-error class="mt-2" :messages="$errors->get('cargo')" />
+                </div>
+
+                <!-- Departamento -->
+                <div>
+                    <x-input-label for="departamento" :value="__('Departamento')" />
+                    <x-text-input id="departamento" name="departamento" type="text" class="mt-1 block w-full" :value="old('departamento', $user->departamento)"
+                        placeholder="Ej: Logística" />
+                    <x-input-error class="mt-2" :messages="$errors->get('departamento')" />
+                </div>
+            </div>
         </div>
 
         <div class="flex items-center gap-4">

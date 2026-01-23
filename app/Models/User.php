@@ -26,6 +26,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'rut',
         'address',
         'phone',
+        'cargo',
+        'departamento',
         'license_expires_at',
         'license_photo_path',
         'role',

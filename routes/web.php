@@ -63,7 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::get('rooms/trash', [MeetingRoomController::class, 'trash'])->name('rooms.trash');
     Route::put('rooms/{id}/restore', [MeetingRoomController::class, 'restore'])->name('rooms.restore');
     Route::delete('rooms/{id}/force-delete', [MeetingRoomController::class, 'forceDelete'])->name('rooms.force-delete');
-    
+
     Route::resource('rooms', MeetingRoomController::class);
 
     Route::get('/reservar-sala', [RoomReservationController::class, 'index'])->name('reservations.catalog');
@@ -78,7 +78,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/rooms/{room}/availability', [App\Http\Controllers\RoomReservationController::class, 'availability'])->name('rooms.availability');
     // Historial de Reservas
     Route::get('/admin/rooms/history', [RoomReservationController::class, 'history'])->name('rooms.history');
-    
+
     // Rutas de Mantenimiento
     Route::post('vehiculos/{vehicle}/maintenance/state', [MaintenanceController::class, 'updateState'])->name('vehicles.maintenance.state');
     Route::post('vehiculos/{vehicle}/maintenance/request', [MaintenanceController::class, 'storeRequest'])->name('vehicles.maintenance.request');
@@ -99,6 +99,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/requests/{id}/reject', [VehicleRequestController::class, 'reject'])->name('requests.reject');
     Route::get('/mis-reservas', [VehicleRequestController::class, 'index'])->name('requests.index');
     Route::post('/requests/{id}/complete', [VehicleRequestController::class, 'complete'])->name('requests.complete');
+    Route::get('/historial-uso-vehiculos', [VehicleRequestController::class, 'history'])->name('requests.history');
+
 
     // Historial de Devoluciones (Admin)
     Route::get('/admin/returns/trash', [VehicleReturnController::class, 'trash'])->name('admin.returns.trash');
@@ -114,7 +116,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::post('/notifications/mark-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAll');
 
-    
+
 });
 
 // Rutas de cambio de contraseña forzado 
@@ -132,7 +134,7 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
     Route::delete('users/{id}/force-delete', [UserController::class, 'forceDelete'])->name('users.force-delete');
     Route::resource('users', UserController::class);
 
-    
+
 });
 
 require __DIR__ . '/auth.php';

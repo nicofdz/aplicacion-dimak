@@ -8,8 +8,7 @@
         open: true, 
         vehicleMenu: {{ request()->routeIs('dashboard', 'vehicles.*', 'conductores.*', 'requests.*', 'admin.returns.*') ? 'true' : 'false' }}, 
         roomMenu: {{ request()->routeIs('rooms.*', 'reservations.*') ? 'true' : 'false' }} 
-    }" 
-    :class="{
+    }" :class="{
         'w-64': open, 
         'w-20': !open,
         '-translate-x-full': !mobileSidebarOpen,
@@ -41,7 +40,7 @@
     </div>
 
     <nav class="flex-1 px-2 py-4 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700">
-        
+
         @if(Auth::user()->role === 'admin')
             <a href="{{ route('users.index') }}"
                 class="flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group"
@@ -55,21 +54,26 @@
         @endif
 
         <div>
-            <button @click="if(!open) { open = true; setTimeout(() => vehicleMenu = true, 100); } else { vehicleMenu = !vehicleMenu; }"
+            <button
+                @click="if(!open) { open = true; setTimeout(() => vehicleMenu = true, 100); } else { vehicleMenu = !vehicleMenu; }"
                 class="w-full flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group focus:outline-none justify-between"
                 :class="{'justify-center': !open, 'bg-gray-800 text-white': vehicleMenu}">
                 <div class="flex items-center">
                     <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h6l2 4m-8-4v8m0-8V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v9h2m8 0H9m4 0h2m4 0h2v-4m0 0h-5m3.5 5.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm-10 0a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 7h6l2 4m-8-4v8m0-8V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v9h2m8 0H9m4 0h2m4 0h2v-4m0 0h-5m3.5 5.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm-10 0a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z" />
                     </svg>
-                    <span x-show="open" class="ml-3 whitespace-nowrap font-medium" x-transition:enter="delay-75">Módulo Vehículos</span>
+                    <span x-show="open" class="ml-3 whitespace-nowrap font-medium" x-transition:enter="delay-75">Módulo
+                        Vehículos</span>
                 </div>
-                <svg x-show="open" class="w-4 h-4 transition-transform duration-200" :class="{'rotate-90': vehicleMenu}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg x-show="open" class="w-4 h-4 transition-transform duration-200" :class="{'rotate-90': vehicleMenu}"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
             </button>
 
-            <div x-show="open && vehicleMenu" x-collapse class="space-y-1 bg-gray-800/50 mt-1 rounded-md overflow-hidden">
+            <div x-show="open && vehicleMenu" x-collapse
+                class="space-y-1 bg-gray-800/50 mt-1 rounded-md overflow-hidden">
                 <a href="{{ route('dashboard') }}"
                     class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
                     :class="{{ request()->routeIs('dashboard') ? "'text-white bg-gray-800'" : "''" }}">
@@ -95,6 +99,11 @@
                     :class="{{ request()->routeIs('requests.index') ? "'text-white bg-gray-800'" : "''" }}">
                     Mis Reservas
                 </a>
+                <a href="{{ route('requests.history') }}"
+                    class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
+                    :class="{{ request()->routeIs('requests.history') ? "'text-white bg-gray-800'" : "''" }}">
+                    Historial de Uso
+                </a>
                 @if(Auth::user()->role === 'admin')
                     <a href="{{ route('admin.returns.index') }}"
                         class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
@@ -106,31 +115,35 @@
         </div>
 
         <div>
-            <button @click="if(!open) { open = true; setTimeout(() => roomMenu = true, 100); } else { roomMenu = !roomMenu; }"
+            <button
+                @click="if(!open) { open = true; setTimeout(() => roomMenu = true, 100); } else { roomMenu = !roomMenu; }"
                 class="w-full flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group focus:outline-none justify-between"
                 :class="{'justify-center': !open, 'bg-gray-800 text-white': roomMenu}">
                 <div class="flex items-center">
                     <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 9h6m-6 3h6m-6 3h6M6.996 9h.01m-.01 3h.01m-.01 3h.01M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 9h6m-6 3h6m-6 3h6M6.996 9h.01m-.01 3h.01m-.01 3h.01M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
                     </svg>
-                    <span x-show="open" class="ml-3 whitespace-nowrap font-medium" x-transition:enter="delay-75">Módulo Salas</span>
+                    <span x-show="open" class="ml-3 whitespace-nowrap font-medium" x-transition:enter="delay-75">Módulo
+                        Salas</span>
                 </div>
-                <svg x-show="open" class="w-4 h-4 transition-transform duration-200" :class="{'rotate-90': roomMenu}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg x-show="open" class="w-4 h-4 transition-transform duration-200" :class="{'rotate-90': roomMenu}"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
             </button>
 
             <div x-show="open && roomMenu" x-collapse class="space-y-1 bg-gray-800/50 mt-1 rounded-md overflow-hidden">
-                
+
                 <a href="{{ route('reservations.catalog') }}"
                     class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
                     :class="{{ request()->routeIs('reservations.catalog') ? "'text-white bg-gray-800'" : "''" }}">
                     Ver Salas
                 </a>
 
-                <a href="{{ route('reservations.my_reservations') }}" 
-                   class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
-                   :class="{{ request()->routeIs('reservations.my_reservations') ? "'text-white bg-gray-800'" : "''" }}">
+                <a href="{{ route('reservations.my_reservations') }}"
+                    class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
+                    :class="{{ request()->routeIs('reservations.my_reservations') ? "'text-white bg-gray-800'" : "''" }}">
                     Mis Reservas
                 </a>
 
@@ -142,8 +155,8 @@
                     </a>
 
                     <a href="{{ route('rooms.history') }}"
-                       class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
-                       :class="{{ request()->routeIs('rooms.history') ? "'text-white bg-gray-800'" : "''" }}">
+                        class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
+                        :class="{{ request()->routeIs('rooms.history') ? "'text-white bg-gray-800'" : "''" }}">
                         Historial de Salas
                     </a>
                 @endif
