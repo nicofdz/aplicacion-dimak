@@ -111,4 +111,6 @@ class MeetingRoomController extends Controller
         $room->forceDelete(); 
         return redirect()->back()->with('success', 'Sala eliminada permanentemente.');
     }
+
+    
 }

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\NewReservationRequest;
 use App\Notifications\ReservationConfirmed;
 use Illuminate\Support\Facades\Notification;
+use App\Notifications\ReservationCancelled;
 
 class RoomReservationController extends Controller
 {
@@ -197,5 +198,43 @@ class RoomReservationController extends Controller
             ->paginate(20); 
 
         return view('rooms.history', compact('reservations'));
+    }
+
+    public function agenda(Request $request)
+    {
+        
+        $month = $request->input('month', now()->month);
+        $year  = $request->input('year', now()->year);
+
+        
+        $reservations = RoomReservation::with(['user', 'meetingRoom'])
+            ->where('status', 'approved')
+            ->whereMonth('start_time', $month)
+            ->whereYear('start_time', $year)
+            ->orderBy('start_time', 'asc') 
+            ->get()
+            ->groupBy(function($val) {
+                
+                return $val->start_time->format('Y-m-d');
+            });
+
+        return view('rooms.agenda', compact('reservations', 'month', 'year'));
+    }
+    public function cancelByAdmin(Request $request, $id)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:255',
+        ]);
+
+        $reservation = RoomReservation::findOrFail($id);
+        
+       
+        $reservation->status = 'cancelled'; 
+        $reservation->save();
+
+        
+        $reservation->user->notify(new ReservationCancelled($reservation, $request->reason));
+
+        return redirect()->back()->with('success', 'Reserva cancelada y usuario notificado.');
     }
 }
