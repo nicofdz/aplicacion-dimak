@@ -100,4 +100,6 @@ class UserController extends Controller
         $user->forceDelete();
         return redirect()->route('users.index', ['view' => 'trash'])->with('success', 'Usuario eliminado permanentemente.');
     }
+
+    
 }

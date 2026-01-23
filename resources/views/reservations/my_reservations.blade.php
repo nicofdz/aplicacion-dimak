@@ -10,7 +10,10 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-12" x-data="{ 
+        openRoomModal: false, 
+        selectedRoom: { name: '', location: '', capacity: '', description: '', image: null } 
+    }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
             @if(session('success'))
@@ -44,13 +47,31 @@
                                     @foreach($reservations as $res)
                                         <tr class="hover:bg-gray-800 transition">
                                             <td class="px-5 py-4 whitespace-nowrap">
-                                                <div class="text-sm font-bold text-white">{{ $res->meetingRoom->name ?? 'Sala eliminada' }}</div>
-                                                <div class="text-xs text-gray-500">{{ $res->meetingRoom->location ?? '' }}</div>
+                                                @if($res->meetingRoom)
+                                                    <button type="button" 
+                                                            @click.stop="selectedRoom = {
+                                                                name: '{{ addslashes($res->meetingRoom->name) }}',
+                                                                location: '{{ addslashes($res->meetingRoom->location ?? 'No especificada') }}',
+                                                                capacity: '{{ $res->meetingRoom->capacity }}',
+                                                                description: '{{ addslashes($res->meetingRoom->description ?? 'Sin descripción') }}',
+                                                                image: '{{ $res->meetingRoom->image_path ? Storage::url($res->meetingRoom->image_path) : null }}'
+                                                            }; openRoomModal = true;" 
+                                                            class="text-left group focus:outline-none block w-full">
+                                                        <div class="text-sm font-bold text-blue-400 group-hover:text-blue-300 group-hover:underline transition">
+                                                            {{ $res->meetingRoom->name }}
+                                                        </div>
+                                                        <div class="text-xs text-gray-500 group-hover:text-gray-400">
+                                                            {{Str::limit($res->meetingRoom->location ?? '', 20) }}
+                                                        </div>
+                                                    </button>
+                                                @else
+                                                    <span class="text-sm font-bold text-red-400 italic">Sala eliminada</span>
+                                                @endif
                                             </td>
 
                                             <td class="px-5 py-4 whitespace-nowrap">
-                                                <div class="text-sm text-gray-200">
-                                                    {{ \Carbon\Carbon::parse($res->start_time)->translatedFormat('D d M, Y') }}
+                                                <div class="text-sm text-gray-200 capitalize">
+                                                    {{ \Carbon\Carbon::parse($res->start_time)->locale('es')->translatedFormat('l d \d\e F, Y') }}
                                                 </div>
                                                 <div class="text-xs text-gray-400 font-mono mt-1">
                                                     {{ \Carbon\Carbon::parse($res->start_time)->format('H:i') }} - 
@@ -112,5 +133,85 @@
                 </div>
             </div>
         </div>
+
+        <template x-teleport="body">
+            <div x-show="openRoomModal" 
+                 style="display: none;" 
+                 class="fixed inset-0 z-[9999] overflow-y-auto" 
+                 aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                
+                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    
+                    <div x-show="openRoomModal" 
+                         x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                         x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                         class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" 
+                         @click="openRoomModal = false" aria-hidden="true"></div>
+
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                    <div x-show="openRoomModal" 
+                         x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                         x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                         x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                         class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-gray-200 dark:border-gray-700 relative z-50">
+                        
+                        <div class="bg-gray-800 px-4 py-3 sm:px-6 border-b border-gray-700 flex justify-between items-center">
+                            <h3 class="text-lg leading-6 font-medium text-white" id="modal-title">
+                                Detalles de la Sala
+                            </h3>
+                            <button @click="openRoomModal = false" class="text-gray-400 hover:text-white">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="px-4 py-5 sm:p-6 text-gray-100">
+                            <div class="mb-4 flex justify-center">
+                                <template x-if="selectedRoom.image">
+                                    <img :src="selectedRoom.image" class="w-full h-48 object-cover rounded-lg border border-gray-600 shadow-md" alt="Foto Sala">
+                                </template>
+                                <template x-if="!selectedRoom.image">
+                                    <div class="w-full h-48 bg-gray-700 rounded-lg flex flex-col items-center justify-center text-gray-500 border border-gray-600">
+                                        <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        <span>Sin imagen disponible</span>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Nombre</label>
+                                    <p class="text-lg font-bold text-white" x-text="selectedRoom.name"></p>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Capacidad</label>
+                                        <p class="font-medium text-gray-200" x-text="selectedRoom.capacity + ' Personas'"></p>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Ubicación</label>
+                                        <p class="font-medium text-gray-200" x-text="selectedRoom.location"></p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Descripción</label>
+                                    <p class="mt-1 p-3 bg-gray-700/50 rounded-lg text-sm text-gray-300 italic border-l-2 border-blue-500" x-text="selectedRoom.description"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-700">
+                            <button type="button" class="w-full inline-flex justify-center rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-base font-medium text-white hover:bg-gray-600 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm" @click="openRoomModal = false">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
     </div>
 </x-app-layout>
