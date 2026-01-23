@@ -99,7 +99,7 @@
                     :class="{{ request()->routeIs('requests.index') ? "'text-white bg-gray-800'" : "''" }}">
                     Mis Reservas
                 </a>
-                <a href="{{ route('requests.history') }}"
+                <a href="{{ route('requests.history.index') }}"
                     class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
                     :class="{{ request()->routeIs('requests.history') ? "'text-white bg-gray-800'" : "''" }}">
                     Historial de Uso

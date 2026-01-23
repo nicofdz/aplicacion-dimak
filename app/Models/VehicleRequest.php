@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class VehicleRequest extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -55,5 +56,21 @@ class VehicleRequest extends Model
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    /**
+     * Obtiene las cargas de combustible asociadas a esta solicitud.
+     */
+    public function fuelLoads()
+    {
+        return $this->hasMany(FuelLoad::class);
+    }
+
+    /**
+     * Obtiene el registro de entrega asociado a esta solicitud.
+     */
+    public function vehicleReturn()
+    {
+        return $this->hasOne(VehicleReturn::class);
     }
 }

@@ -80,12 +80,13 @@
                                                         @if($request->vehicle)
                                                             <button
                                                                 @click="fuelRequestId = '{{ $request->id }}'; fuelVehicleId = '{{ $request->vehicle_id }}'; fuelType = '{{ $request->vehicle->fuel_type }}'; $dispatch('open-modal', 'fuel-load-modal')"
-                                                                class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 font-bold text-xs uppercase">
-                                                                ⛽ Cargar Combustible
+                                                                class="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 active:bg-green-700 focus:outline-none focus:border-green-700 focus:ring focus:ring-green-200 disabled:opacity-25 transition w-full justify-center">
+                                                                <span class="mr-2">⛽</span> Cargar Combustible
                                                             </button>
                                                             <button
                                                                 @click="returnUrl = '{{ route('requests.complete', $request->id) }}'; $dispatch('open-modal', 'confirm-return-modal')"
-                                                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold text-xs uppercase">
+                                                                class="inline-flex items-center px-3 py-1 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:border-indigo-700 focus:ring focus:ring-indigo-200 disabled:opacity-25 transition w-full justify-center">
+                                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                                                                 Devolver / Finalizar
                                                             </button>
                                                         @else
@@ -194,15 +195,119 @@
                                         <x-input-error :messages="$errors->get('comments')" class="mt-2" />
                                     </div>
 
-                                    <!-- Fotos -->
-                                    <div class="col-span-2" x-data="{ files: [] }">
+                                    <!-- Fotos (Con Compresión Múltiple) -->
+                                    <div class="col-span-2" x-data="{
+                                        files: [],
+                                        isProcessing: false,
+                                        previews: [],
+                                        async compressImage(file) {
+                                            return new Promise((resolve) => {
+                                                const reader = new FileReader();
+                                                reader.readAsDataURL(file);
+                                                reader.onload = (event) => {
+                                                    const img = new Image();
+                                                    img.src = event.target.result;
+                                                    img.onload = () => {
+                                                        const canvas = document.createElement('canvas');
+                                                        const ctx = canvas.getContext('2d');
+                                                        const MAX_WIDTH = 1920;
+                                                        let width = img.width;
+                                                        let height = img.height;
+
+                                                        if (width > MAX_WIDTH) {
+                                                            height *= MAX_WIDTH / width;
+                                                            width = MAX_WIDTH;
+                                                        }
+
+                                                        canvas.width = width;
+                                                        canvas.height = height;
+                                                        ctx.drawImage(img, 0, 0, width, height);
+
+                                                        canvas.toBlob((blob) => {
+                                                            const compressedFile = new File([blob], file.name, {
+                                                                type: 'image/jpeg',
+                                                                lastModified: Date.now(),
+                                                            });
+                                                            resolve({ file: compressedFile, preview: event.target.result });
+                                                        }, 'image/jpeg', 0.8);
+                                                    };
+                                                };
+                                            });
+                                        },
+                                        async handleFiles(event) {
+                                            this.isProcessing = true;
+                                            const selectedFiles = Array.from(event.target.files);
+
+                                            if (selectedFiles.length === 0) {
+                                                this.isProcessing = false;
+                                                return;
+                                            }
+
+                                            try {
+                                                const results = await Promise.all(selectedFiles.map(file => this.compressImage(file)));
+                                                
+                                                // Agregar nuevos archivos a los existentes (Acumulativo)
+                                                results.forEach(result => {
+                                                    // Evitar duplicados por nombre si se desea, o permitir todo. Aquí permitimos todo.
+                                                    this.files.push(result.file);
+                                                    this.previews.push(result.preview);
+                                                });
+                                                
+                                                this.updateInputFiles();
+                                                
+                                                // Limpiar el input para permitir seleccionar los mismos archivos de nuevo si se desea
+                                                event.target.value = ''; 
+                                            } catch (error) {
+                                                console.error('Error comprimiendo imágenes', error);
+                                            } finally {
+                                                this.isProcessing = false;
+                                            }
+                                        },
+                                        removeFile(index) {
+                                            this.files.splice(index, 1);
+                                            this.previews.splice(index, 1);
+                                            this.updateInputFiles();
+                                        },
+                                        updateInputFiles() {
+                                            const dataTransfer = new DataTransfer();
+                                            this.files.forEach(file => {
+                                                dataTransfer.items.add(file);
+                                            });
+                                            this.$refs.photosInput.files = dataTransfer.files;
+                                        }
+                                    }">
                                         <x-input-label for="photos" :value="__('Fotos (Opcional - Máx 5)')" />
+                                        
+                                        <!-- Previews Grid -->
+                                        <div class="grid grid-cols-5 gap-2 mt-2 mb-2" x-show="previews.length > 0">
+                                            <template x-for="(preview, index) in previews" :key="index">
+                                                <div class="relative aspect-square group">
+                                                    <img :src="preview" class="w-full h-full object-cover rounded-md border border-gray-300 dark:border-gray-600">
+                                                    <!-- Botón Eliminar -->
+                                                    <button type="button" @click="removeFile(index)" class="absolute top-1 right-1 bg-red-600/90 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-700 focus:opacity-100">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    </button>
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <!-- Processing Status -->
+                                        <div x-show="isProcessing" class="flex items-center text-sm text-blue-500 mb-2">
+                                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Optimizando imágenes...
+                                        </div>
+
                                         <input type="file" id="photos" name="photos[]" multiple accept="image/*"
-                                            @change="files = Array.from($event.target.files)"
+                                            x-ref="photosInput"
+                                            @change="handleFiles($event)"
                                             class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-gray-700 dark:file:text-gray-300" />
 
-                                        <div class="mt-2 text-xs text-gray-500" x-show="files.length > 0">
-                                            <span x-text="files.length + ' archivos seleccionados'"></span>
+                                        <div class="mt-2 text-xs text-gray-500" x-show="files.length > 0 && !isProcessing">
+                                            <span x-text="files.length + ' imágenes listas para subir'"></span>
+                                            <span class="text-green-500 font-bold ml-1">✓ Optimizadas</span>
                                         </div>
                                         <x-input-error :messages="$errors->get('photos')" class="mt-2" />
                                         <x-input-error :messages="$errors->get('photos.*')" class="mt-2" />
@@ -291,10 +396,81 @@
                                         <div class="text-2xl font-bold text-green-600" x-ref="total">$0</div>
                                     </div>
 
-                                    <!-- Foto Boleta -->
-                                    <div>
+                                    <!-- Foto Boleta (Con Compresión) -->
+                                    <div x-data="{
+                                        preview: null,
+                                        isProcessing: false,
+                                        async compressImage(file) {
+                                            this.isProcessing = true;
+                                            return new Promise((resolve) => {
+                                                const reader = new FileReader();
+                                                reader.readAsDataURL(file);
+                                                reader.onload = (event) => {
+                                                    const img = new Image();
+                                                    img.src = event.target.result;
+                                                    img.onload = () => {
+                                                        const canvas = document.createElement('canvas');
+                                                        const ctx = canvas.getContext('2d');
+                                                        const MAX_WIDTH = 1920;
+                                                        let width = img.width;
+                                                        let height = img.height;
+
+                                                        if (width > MAX_WIDTH) {
+                                                            height *= MAX_WIDTH / width;
+                                                            width = MAX_WIDTH;
+                                                        }
+
+                                                        canvas.width = width;
+                                                        canvas.height = height;
+                                                        ctx.drawImage(img, 0, 0, width, height);
+
+                                                        canvas.toBlob((blob) => {
+                                                            const compressedFile = new File([blob], file.name, {
+                                                                type: 'image/jpeg',
+                                                                lastModified: Date.now(),
+                                                            });
+                                                            resolve(compressedFile);
+                                                        }, 'image/jpeg', 0.8);
+                                                    };
+                                                };
+                                            });
+                                        }
+                                    }">
                                         <x-input-label for="fuel_photo" :value="__('Foto Boleta / Recibo')" />
-                                        <input type="file" id="fuel_photo" name="receipt_photo" accept="image/*"
+                                        
+                                        <!-- Preview -->
+                                        <div class="mt-2 mb-2" x-show="preview" style="display: none;">
+                                            <img :src="preview" class="max-h-40 rounded-md border border-gray-300 dark:border-gray-600">
+                                            <div class="text-xs text-green-500 font-bold mt-1" x-show="!isProcessing && preview">✓ Imagen optimizada para carga rápida</div>
+                                        </div>
+
+                                        <!-- Processing State -->
+                                        <div x-show="isProcessing" class="flex items-center text-sm text-blue-500 mb-2">
+                                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Optimizando imagen...
+                                        </div>
+
+                                        <input type="file" id="fuel_photo" name="receipt_photo" accept="image/*" x-ref="fuelPhotoInput"
+                                            @change="
+                                                const file = $event.target.files[0];
+                                                if (file) {
+                                                    // Preview inmediato
+                                                    const reader = new FileReader();
+                                                    reader.onload = (e) => { preview = e.target.result; };
+                                                    reader.readAsDataURL(file);
+
+                                                    // Comprimir
+                                                    compressImage(file).then(compressedFile => {
+                                                        const dataTransfer = new DataTransfer();
+                                                        dataTransfer.items.add(compressedFile);
+                                                        $refs.fuelPhotoInput.files = dataTransfer.files;
+                                                        isProcessing = false;
+                                                    });
+                                                }
+                                            "
                                             class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-gray-700 dark:file:text-gray-300" />
                                     </div>
 

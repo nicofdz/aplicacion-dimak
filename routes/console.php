@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('vehicles:check-documents')->dailyAt('09:00');
+Schedule::command('vehicles:check-maintenance')->dailyAt('09:00');

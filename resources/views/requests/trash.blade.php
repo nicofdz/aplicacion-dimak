@@ -2,14 +2,14 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Historial de Uso de Vehículos') }}
+                {{ __('Papelera - Historial de Uso') }}
             </h2>
-            <a href="{{ route('requests.history.trash') }}" 
-                class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+            <a href="{{ route('requests.history.index') }}" 
+                class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-500 active:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
-                {{ __('Papelera') }}
+                {{ __('Volver') }}
             </a>
         </div>
     </x-slot>
@@ -59,7 +59,7 @@
                     </button>
                     
                     <template x-if="'{{ request('filter_type') }}' || '{{ request('cargo') }}'">
-                        <a href="{{ route('requests.history.index') }}" class="px-3 py-2 text-gray-500 hover:text-red-500 transition-colors" title="Limpiar Filtros">
+                        <a href="{{ route('requests.history.trash') }}" class="px-3 py-2 text-gray-500 hover:text-red-500 transition-colors" title="Limpiar Filtros">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </a>
                     </template>
@@ -99,7 +99,7 @@
                         </button>
                     </div>
 
-                    <form method="GET" action="{{ route('requests.history.index') }}">
+                    <form method="GET" action="{{ route('requests.history.trash') }}">
                         
                         <!-- Filtro de Fecha -->
                         <div class="mb-6">
@@ -143,7 +143,7 @@
                                 Aplicar Filtros
                             </button>
                             @if(request('filter_type') || request('cargo'))
-                                <a href="{{ route('requests.history.index') }}" class="w-full py-3 text-center text-gray-400 hover:text-white font-medium hover:bg-gray-700 rounded-lg transition-colors">
+                                <a href="{{ route('requests.history.trash') }}" class="w-full py-3 text-center text-gray-400 hover:text-white font-medium hover:bg-gray-700 rounded-lg transition-colors">
                                     Limpiar Filtros
                                 </a>
                             @endif
@@ -312,47 +312,70 @@
                                                 @endif
                                             </td>
                                             
-                                            <!-- Acciones -->
+                                            <!-- Acciones Papelera -->
                                             <td class="px-4 py-3 whitespace-nowrap text-center">
                                                 <div class="flex justify-center items-center gap-2">
-                                                    @if($request->status == 'completed' && $request->vehicleReturn)
-                                                        <a href="{{ route('admin.returns.index', ['request_id' => $request->id]) }}" 
-                                                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shadow-sm"
-                                                           title="Ver detalles de la entrega">
-                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                            </svg>
-                                                            Ver Entrega
-                                                        </a>
-                                                    @endif
-                                                    
-                                                    <button @click="$dispatch('open-modal', 'delete-request-{{ $request->id }}')" type="button"
-                                                        class="p-2 text-red-600 hover:text-red-900 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                                                        title="Eliminar">
+                                                    <!-- Restaurar -->
+                                                    <button @click="$dispatch('open-modal', 'restore-request-{{ $request->id }}')" type="button"
+                                                        class="p-2 text-green-600 hover:text-green-900 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors"
+                                                        title="Restaurar">
                                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                                        </svg>
+                                                    </button>
+                                                    
+                                                    <!-- Eliminar Permanentemente -->
+                                                    <button @click="$dispatch('open-modal', 'force-delete-request-{{ $request->id }}')" type="button"
+                                                        class="p-2 text-red-600 hover:text-red-900 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                                                        title="Eliminar Permanentemente">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                                         </svg>
                                                     </button>
                                                 </div>
 
-                                                <!-- Modal Confirmar Eliminar -->
+                                                <!-- Modal Confirmar Restaurar -->
                                                 <template x-teleport="body">
-                                                    <x-modal name="delete-request-{{ $request->id }}" :show="false" focusable>
-                                                        <form method="POST" action="{{ route('requests.history.destroy', $request->id) }}" class="p-6">
+                                                    <x-modal name="restore-request-{{ $request->id }}" :show="false" focusable>
+                                                        <form method="POST" action="{{ route('requests.history.restore', $request->id) }}" class="p-6">
+                                                            @csrf
+                                                            @method('PUT')
+                                                            <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                                                {{ __('¿Restaurar solicitud?') }}
+                                                            </h2>
+                                                            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 whitespace-normal">
+                                                                {{ __('La solicitud será restaurada y volverá a aparecer en el historial de uso.') }}
+                                                            </p>
+                                                            <div class="mt-6 flex justify-end">
+                                                                <x-secondary-button x-on:click="$dispatch('close')">
+                                                                    {{ __('Cancelar') }}
+                                                                </x-secondary-button>
+                                                                <button type="submit" class="ml-3 inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 active:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                                    {{ __('Restaurar') }}
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </x-modal>
+                                                </template>
+
+                                                <!-- Modal Confirmar Eliminar Permanentemente -->
+                                                <template x-teleport="body">
+                                                    <x-modal name="force-delete-request-{{ $request->id }}" :show="false" focusable>
+                                                        <form method="POST" action="{{ route('requests.history.force-delete', $request->id) }}" class="p-6">
                                                             @csrf
                                                             @method('DELETE')
                                                             <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                                                                {{ __('¿Mover a la papelera?') }}
+                                                                {{ __('¿Eliminar permanentemente?') }}
                                                             </h2>
                                                             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 whitespace-normal">
-                                                                {{ __('La solicitud se moverá a la papelera de reciclaje. Podrás restaurarla o eliminarla permanentemente desde allí.') }}
+                                                                {{ __('¡Esta acción no se puede deshacer! La solicitud será eliminada permanentemente de la base de datos.') }}
                                                             </p>
                                                             <div class="mt-6 flex justify-end">
                                                                 <x-secondary-button x-on:click="$dispatch('close')">
                                                                     {{ __('Cancelar') }}
                                                                 </x-secondary-button>
                                                                 <x-danger-button class="ml-3">
-                                                                    {{ __('Mover a Papelera') }}
+                                                                    {{ __('Eliminar Permanentemente') }}
                                                                 </x-danger-button>
                                                             </div>
                                                         </form>

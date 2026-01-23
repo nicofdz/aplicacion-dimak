@@ -97,7 +97,7 @@
                                                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-indigo-600"
                                                         x-data=""
                                                         x-on:click.prevent="$dispatch('open-modal', 'view-user-{{ $user->id }}')">
-                                                        {{ $user->name }}
+                                                        {{ $user->short_name }}
                                                         @if(auth()->id() === $user->id)
                                                             <span
                                                                 class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
@@ -123,10 +123,10 @@
                                                     @method('PATCH')
                                                     <select name="role" onchange="this.form.submit()"
                                                         class="text-xs font-semibold rounded-full border-none focus:ring-0 cursor-pointer
-                                                                        {{ $user->role === 'admin' ? 'bg-purple-100 text-purple-800' : '' }}
-                                                                        {{ $user->role === 'supervisor' ? 'bg-blue-100 text-blue-800' : '' }}
-                                                                        {{ $user->role === 'worker' ? 'bg-green-100 text-green-800' : '' }}
-                                                                        {{ $user->role === 'viewer' ? 'bg-gray-100 text-gray-800' : '' }}">
+                                                                                                {{ $user->role === 'admin' ? 'bg-purple-100 text-purple-800' : '' }}
+                                                                                                {{ $user->role === 'supervisor' ? 'bg-blue-100 text-blue-800' : '' }}
+                                                                                                {{ $user->role === 'worker' ? 'bg-green-100 text-green-800' : '' }}
+                                                                                                {{ $user->role === 'viewer' ? 'bg-gray-100 text-gray-800' : '' }}">
                                                         <option value="worker" {{ $user->role === 'worker' ? 'selected' : '' }}
                                                             class="bg-white text-gray-900">Trabajador</option>
                                                         <option value="supervisor" {{ $user->role === 'supervisor' ? 'selected' : '' }} class="bg-white text-gray-900">Supervisor</option>
@@ -150,7 +150,7 @@
                                                     @method('PATCH')
                                                     <select name="is_active" onchange="this.form.submit()"
                                                         class="text-xs font-semibold rounded-full border-none focus:ring-0 cursor-pointer
-                                                                        {{ $user->is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                                                                                {{ $user->is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
                                                         <option value="1" {{ $user->is_active ? 'selected' : '' }}
                                                             class="bg-white text-gray-900">Activo</option>
                                                         <option value="0" {{ !$user->is_active ? 'selected' : '' }}
@@ -252,7 +252,7 @@
                                                         </div>
                                                         <div class="ml-4">
                                                             <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                                                                {{ $user->name }}
+                                                                {{ $user->name }} {{ $user->last_name }}
                                                             </h3>
                                                             <p class="text-sm text-gray-500">{{ $user->email }}</p>
                                                             <span
@@ -272,6 +272,14 @@
                                                         <div>
                                                             <strong>Dirección:</strong>
                                                             {{ $user->address ?? 'No registrada' }}
+                                                        </div>
+                                                        <div>
+                                                            <strong>Cargo:</strong>
+                                                            {{ $user->cargo ?? 'No registrado' }}
+                                                        </div>
+                                                        <div>
+                                                            <strong>Departamento:</strong>
+                                                            {{ $user->departamento ?? 'No registrado' }}
                                                         </div>
                                                         <div>
                                                             <strong>Estado:</strong>
@@ -323,10 +331,18 @@
             <div class="mt-6 space-y-4">
                 <!-- Nombre -->
                 <div>
-                    <x-input-label for="new_name" :value="__('Nombre')" />
+                    <x-input-label for="new_name" :value="__('Nombres')" />
                     <x-text-input id="new_name" name="name" type="text" class="mt-1 block w-full" :value="old('name')"
                         required />
                     <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                </div>
+
+                <!-- Apellido -->
+                <div>
+                    <x-input-label for="new_last_name" :value="__('Apellidos')" />
+                    <x-text-input id="new_last_name" name="last_name" type="text" class="mt-1 block w-full"
+                        :value="old('last_name')" required />
+                    <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
                 </div>
 
                 <!-- Email -->

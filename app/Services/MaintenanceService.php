@@ -65,8 +65,8 @@ class MaintenanceService
             ];
         }
 
-        // Caso 2: Próximo (Amarillo - 500km antes)
-        if (($kmParams - $currentKm) <= 500) {
+        // Caso 2: Próximo (Amarillo - 100km antes)
+        if (($kmParams - $currentKm) <= 100) {
             $diff = $kmParams - $currentKm;
             return [
                 'type' => 'warning',

@@ -203,7 +203,8 @@ class VehicleRequestController extends Controller
      */
     public function history(Request $request)
     {
-        $query = VehicleRequest::with(['user', 'vehicle', 'conductor'])
+        $query = VehicleRequest::with(['user', 'vehicle', 'conductor', 'vehicleReturn'])
+            ->whereIn('status', ['completed', 'approved']) // Solo completadas y en uso
             ->orderBy('start_date', 'desc');
 
         // Filtro por rango de fechas (día, mes, año)
@@ -246,5 +247,90 @@ class VehicleRequestController extends Controller
             ->values();
 
         return view('requests.history', compact('requests', 'cargos'));
+    }
+
+    /**
+     * Vista de papelera
+     */
+    public function trash(Request $request)
+    {
+        $query = VehicleRequest::onlyTrashed()
+            ->with(['user', 'vehicle', 'conductor', 'vehicleReturn'])
+            ->whereIn('status', ['completed', 'approved'])
+            ->orderBy('deleted_at', 'desc');
+
+        // Aplicar mismos filtros que en history
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->whereHas('user', function ($q) use ($searchTerm) {
+                $q->where('name', $searchTerm);
+            });
+        }
+
+        if ($request->filled('filter_type') && $request->filled('filter_value')) {
+            $filterType = $request->filter_type;
+            $filterValue = $request->filter_value;
+
+            if ($filterType === 'day') {
+                $query->whereDate('start_date', $filterValue);
+            } elseif ($filterType === 'month') {
+                $query->whereYear('start_date', substr($filterValue, 0, 4))
+                    ->whereMonth('start_date', substr($filterValue, 5, 2));
+            } elseif ($filterType === 'year') {
+                $query->whereYear('start_date', $filterValue);
+            }
+        }
+
+        if ($request->filled('cargo')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('cargo', $request->cargo);
+            });
+        }
+
+        $requests = $query->paginate(15)->withQueryString();
+
+        $cargos = \App\Models\User::whereNotNull('cargo')
+            ->distinct()
+            ->pluck('cargo')
+            ->sort()
+            ->values();
+
+        return view('requests.trash', compact('requests', 'cargos'));
+    }
+
+    /**
+     * Soft delete - mover a papelera
+     */
+    public function destroy($id)
+    {
+        $request = VehicleRequest::findOrFail($id);
+        $request->delete();
+
+        return redirect()->route('requests.history.index')
+            ->with('success', 'Solicitud movida a la papelera.');
+    }
+
+    /**
+     * Restaurar desde papelera
+     */
+    public function restore($id)
+    {
+        $request = VehicleRequest::withTrashed()->findOrFail($id);
+        $request->restore();
+
+        return redirect()->route('requests.history.trash')
+            ->with('success', 'Solicitud restaurada exitosamente.');
+    }
+
+    /**
+     * Eliminar permanentemente
+     */
+    public function forceDelete($id)
+    {
+        $request = VehicleRequest::withTrashed()->findOrFail($id);
+        $request->forceDelete();
+
+        return redirect()->route('requests.history.trash')
+            ->with('success', 'Solicitud eliminada permanentemente.');
     }
 }

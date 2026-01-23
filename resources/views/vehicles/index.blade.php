@@ -9,8 +9,8 @@
                 <!-- Search Button (Mobile) / Input (Desktop) are handled in the table section layout to be cleaner -->
                 
                 <a href="{{ route('vehicles.trash') }}"
-                    class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150 h-9">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
                         </path>
@@ -20,8 +20,8 @@
                 <!-- Botón Solicitudes Pendientes -->
                 <div class="relative">
                     <button x-data="" @click="$dispatch('open-modal', 'maintenance-requests-modal')"
-                        class="inline-flex items-center px-4 py-2 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-400 active:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150 relative">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="inline-flex items-center px-4 py-2 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-400 active:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150 relative h-9">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
                             </path>
@@ -40,8 +40,11 @@
 
                 <!-- Botón Agregar Vehículo -->
                 <button x-data="" @click="$dispatch('open-modal', 'create-vehicle-modal')"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                    + {{ __('Nuevo') }}
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150 h-9">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                     {{ __('Nuevo') }}
                 </button>
             </div>
         </div>
@@ -102,12 +105,15 @@
                         class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-bold text-sm transition-colors flex items-center gap-2 border border-gray-300 dark:border-gray-600">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                         Filtros
-                        @if(request('status'))
-                            <span class="bg-indigo-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">1</span>
+                        @php
+                            $activeFiltersCount = collect([request('status'), request('document_status'), request('maintenance_status')])->filter()->count();
+                        @endphp
+                        @if($activeFiltersCount > 0)
+                            <span class="bg-indigo-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{{ $activeFiltersCount }}</span>
                         @endif
                     </button>
                     
-                    <template x-if="searchQuery || '{{ request('status') }}'">
+                    <template x-if="searchQuery || {{ $activeFiltersCount > 0 ? 'true' : 'false' }}">
                         <a href="{{ route('vehicles.index') }}" class="px-3 py-2 text-gray-500 hover:text-red-500 transition-colors" title="Limpiar Filtros">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </a>
@@ -152,9 +158,12 @@
                         <input type="hidden" name="search" :value="searchQuery">
 
                         <!-- Filter: Status -->
-                        <div class="mb-6">
-                            <label class="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Estado</label>
-                            <div class="space-y-2">
+                        <div class="mb-4 border-b border-gray-700 pb-4" x-data="{ open: {{ request('status') ? 'true' : 'false' }} }">
+                            <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 focus:outline-none">
+                                <span>Estado</span>
+                                <svg class="w-4 h-4 transition-transform duration-200" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div x-show="open" x-collapse style="display: none;" class="space-y-2 mt-2">
                                 <label class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('status') === 'available' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
                                     <input type="radio" name="status" value="available" class="hidden" {{ request('status') === 'available' ? 'checked' : '' }} onchange="this.form.submit()">
                                     <span class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
@@ -174,6 +183,46 @@
                                     <input type="radio" name="status" value="out_of_service" class="hidden" {{ request('status') === 'out_of_service' ? 'checked' : '' }} onchange="this.form.submit()">
                                     <span class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
                                     <span class="text-gray-200">Fuera de Servicio</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Filter: Document Status -->
+                        <div class="mb-4 border-b border-gray-700 pb-4" x-data="{ open: {{ request('document_status') ? 'true' : 'false' }} }">
+                            <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 focus:outline-none">
+                                <span>Estado Documentos</span>
+                                <svg class="w-4 h-4 transition-transform duration-200" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div x-show="open" x-collapse style="display: none;" class="space-y-2 mt-2">
+                                <label class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('document_status') === 'up_to_date' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                    <input type="radio" name="document_status" value="up_to_date" class="hidden" {{ request('document_status') === 'up_to_date' ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <span class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
+                                    <span class="text-gray-200">Al Día</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('document_status') === 'expired' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                    <input type="radio" name="document_status" value="expired" class="hidden" {{ request('document_status') === 'expired' ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <span class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
+                                    <span class="text-gray-200">Atrasados</span>
+                                </label>
+                            </div>
+                        </div>
+
+                         <!-- Filter: Maintenance Status -->
+                         <div class="mb-4 border-b border-gray-700 pb-4 border-none" x-data="{ open: {{ request('maintenance_status') ? 'true' : 'false' }} }">
+                            <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 focus:outline-none">
+                                <span>Estado Mantención</span>
+                                <svg class="w-4 h-4 transition-transform duration-200" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div x-show="open" x-collapse style="display: none;" class="space-y-2 mt-2">
+                                <label class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('maintenance_status') === 'ok' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                    <input type="radio" name="maintenance_status" value="ok" class="hidden" {{ request('maintenance_status') === 'ok' ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <span class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
+                                    <span class="text-gray-200">Al Día</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('maintenance_status') === 'needed' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                    <input type="radio" name="maintenance_status" value="needed" class="hidden" {{ request('maintenance_status') === 'needed' ? 'checked' : '' }} onchange="this.form.submit()">
+                                    <span class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"></span>
+                                    <span class="text-gray-200">Requiere Mantención</span>
                                 </label>
                             </div>
                         </div>
@@ -330,15 +379,24 @@
                                                     'permit_expires_at' => $permit?->expires_at?->format('Y-m-d') ?? '',
                                                     'technical_expires_at' => $technical?->expires_at?->format('Y-m-d') ?? '',
                                                     'technical_expires_at' => $technical?->expires_at?->format('Y-m-d') ?? '',
-                                                    'assigned_user' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->name : '',
-                                                    'assigned_user_rut' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->rut : '',
-                                                    'assigned_user_phone' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->phone : '',
-                                                    'assigned_user_phone' => ($vehicle->display_status === 'occupied' && $vehicle->active_reservation) ? $vehicle->active_reservation->user->phone : '',
+                                                    'assigned_user' => ($vehicle->display_status === 'occupied' && $vehicle->effective_reservation) ? $vehicle->effective_reservation->user->name : '',
+                                                    'assigned_user_rut' => ($vehicle->display_status === 'occupied' && $vehicle->effective_reservation) ? $vehicle->effective_reservation->user->rut : '',
+                                                    'assigned_user_phone' => ($vehicle->display_status === 'occupied' && $vehicle->effective_reservation) ? $vehicle->effective_reservation->user->phone : '',
                                                     'fuel_type' => $vehicle->fuel_type,
+                                                    'reservation' => ($vehicle->display_status === 'occupied' && $vehicle->effective_reservation) ? [
+                                                        'start_date' => $vehicle->effective_reservation->start_date->format('Y-m-d H:i'),
+                                                        'end_date' => $vehicle->effective_reservation->end_date->format('Y-m-d H:i'),
+                                                        'destination_type' => $vehicle->effective_reservation->destination_type,
+                                                        'user_name' => $vehicle->effective_reservation->user->name,
+                                                        'user_email' => $vehicle->effective_reservation->user->email,
+                                                        'conductor_name' => $vehicle->effective_reservation->conductor ? $vehicle->effective_reservation->conductor->name : 'Solicitante',
+                                                        'days_remaining' => (int) ceil(now()->floatDiffInDays($vehicle->effective_reservation->end_date, false)),
+                                                    ] : null,
                                                 ];
                                                 $jsonVehicle = json_encode($jsVehicle);
                                             @endphp
                                             <div class="flex items-center space-x-4">
+                                                <!-- Botón Mantenimiento -->
                                                 <button @click="
                                                                 maintenanceVehicle = {
                                                                     id: {{ $vehicle->id }},
@@ -367,12 +425,14 @@
                                                             stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                     </svg>
                                                 </button>
+
+                                                <!-- Ver Detalle (General) -->
                                                 <button @click="
                                                                 viewingVehicle = {{ $jsonVehicle }};
                                                                 $dispatch('open-modal', 'view-vehicle-modal');
                                                             "
                                                     class="text-green-400 hover:text-green-300 transition duration-150"
-                                                    title="Ver Detalle">
+                                                    title="Ver Ficha Vehículo">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor"
                                                         viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -383,6 +443,20 @@
                                                         </path>
                                                     </svg>
                                                 </button>
+
+                                                <!-- Ver Reserva (Solo si Ocupado) -->
+                                                @if($displayStatus === 'occupied' && $vehicle->effective_reservation)
+                                                <button @click="
+                                                            viewingVehicle = {{ $jsonVehicle }};
+                                                            $dispatch('open-modal', 'reservation-detail-modal');
+                                                        "
+                                                    class="text-indigo-400 hover:text-indigo-300 transition duration-150"
+                                                    title="Ver Reserva Activa">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                </button>
+                                                @endif
                                                 <a href="{{ route('fuel-loads.index', ['vehicle_id' => $vehicle->id]) }}"
                                                     class="text-orange-500 hover:text-orange-400 transition duration-150"
                                                     title="Historial de Combustible">
@@ -1279,11 +1353,17 @@
                                                 <div class="flex justify-end space-x-2">
                                                     <form action="{{ route('requests.approve', $reservation->id) }}" method="POST">
                                                         @csrf
-                                                        <button type="submit" class="text-green-500 hover:text-green-400 font-bold">Aprobar</button>
+                                                        <button type="submit" class="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 active:bg-green-700 focus:outline-none focus:border-green-700 focus:ring focus:ring-green-200 disabled:opacity-25 transition">
+                                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                            Aprobar
+                                                        </button>
                                                     </form>
                                                     <form action="{{ route('requests.reject', $reservation->id) }}" method="POST">
                                                         @csrf
-                                                        <button type="submit" class="text-red-500 hover:text-red-400 font-bold">Rechazar</button>
+                                                        <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:border-red-700 focus:ring focus:ring-red-200 disabled:opacity-25 transition">
+                                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                            Rechazar
+                                                        </button>
                                                     </form>
                                                 </div>
                                             </td>
@@ -1468,4 +1548,92 @@
             </div>
         </x-modal>
     </div>
+
+    <!-- Modal Detalle de Reserva -->
+    <x-modal name="reservation-detail-modal" :show="false" focusable>
+        <div class="p-6 bg-gray-800 text-gray-100" x-data="{
+            getDates() {
+                if (!viewingVehicle || !viewingVehicle.reservation) return [];
+                // Fix date string parsing for cross-browser safety if needed, but YYYY-MM-DD usually works
+                const start = new Date(viewingVehicle.reservation.start_date.replace(/-/g, '/')); 
+                const end = new Date(viewingVehicle.reservation.end_date.replace(/-/g, '/'));
+                const days = [];
+                // Limit to avoiding infinite loops if dates are bad
+                let current = new Date(start);
+                let safeGuard = 0;
+                while (current <= end && safeGuard < 365) {
+                    days.push(new Date(current));
+                    current.setDate(current.getDate() + 1);
+                    safeGuard++;
+                }
+                return days;
+            }
+        }">
+            <div class="flex justify-between items-start mb-6 border-b border-gray-700 pb-4">
+                <h2 class="text-xl font-bold text-gray-100">
+                    <span class="text-indigo-400">📅</span> Detalle de Reserva
+                </h2>
+                <div class="text-right">
+                    <div class="text-sm text-gray-400">Vehículo</div>
+                    <div class="font-bold text-white" x-text="viewingVehicle.brand + ' ' + viewingVehicle.model"></div>
+                    <div class="text-xs text-gray-500" x-text="viewingVehicle.plate"></div>
+                </div>
+            </div>
+            
+            <!-- Info Grid -->
+            <div class="grid grid-cols-2 gap-6 mb-8 bg-gray-900/50 p-4 rounded-xl border border-gray-700">
+                <div>
+                    <label class="text-xs text-indigo-400 uppercase font-bold tracking-wider mb-1 block">Solicitante</label>
+                    <div class="font-bold text-lg text-white" x-text="viewingVehicle.reservation?.user_name"></div>
+                    <div class="text-xs text-gray-500" x-text="viewingVehicle.reservation?.user_email"></div>
+                </div>
+                <div>
+                    <label class="text-xs text-indigo-400 uppercase font-bold tracking-wider mb-1 block">Conductor Asignado</label>
+                    <div class="font-bold text-lg text-yellow-500" x-text="viewingVehicle.reservation?.conductor_name"></div>
+                </div>
+                <div>
+                    <label class="text-xs text-indigo-400 uppercase font-bold tracking-wider mb-1 block">Tipo de Viaje</label>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        :class="viewingVehicle.reservation?.destination_type === 'outside' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'">
+                        <span x-text="viewingVehicle.reservation?.destination_type === 'outside' ? 'Fuera de Ciudad' : 'Local'"></span>
+                    </span>
+                </div>
+                <div>
+                    <label class="text-xs text-indigo-400 uppercase font-bold tracking-wider mb-1 block">Días Restantes</label>
+                    <div class="font-bold text-2xl font-mono" 
+                        :class="viewingVehicle.reservation?.days_remaining < 1 ? 'text-red-500' : 'text-green-400'" 
+                        x-text="viewingVehicle.reservation?.days_remaining >= 0 ? viewingVehicle.reservation?.days_remaining + ' días' : 'Vencido'"></div>
+                </div>
+            </div>
+
+            <!-- Timeline / Mini Calendar -->
+            <div class="mb-6">
+                <div class="flex justify-between items-end mb-3">
+                     <label class="text-xs text-gray-400 uppercase font-bold tracking-wider">Cronograma de Uso</label>
+                     <span class="text-xs text-gray-500" x-text="'Desde: ' + (viewingVehicle.reservation?.start_date.split(' ')[0] || '') + ' Hasta: ' + (viewingVehicle.reservation?.end_date.split(' ')[0] || '')"></span>
+                </div>
+               
+                <div class="flex space-x-2 overflow-x-auto pb-4 custom-scrollbar px-1">
+                    <template x-for="date in getDates()" :key="date.getTime()">
+                        <div class="flex-shrink-0 w-14 h-16 rounded-lg flex flex-col items-center justify-center border transition-all duration-300"
+                            :class="{
+                                'bg-indigo-600 border-indigo-500 text-white shadow-lg scale-110 z-10': date.toDateString() === new Date().toDateString(),
+                                'bg-gray-700 border-gray-600 text-gray-400 opacity-60': date < new Date().setHours(0,0,0,0),
+                                'bg-gray-800 border-gray-600 text-gray-300': date > new Date()
+                            }">
+                            <span class="text-[9px] uppercase tracking-tighter" x-text="date.toLocaleDateString('es-ES', { weekday: 'short' }).slice(0,3)"></span>
+                            <span class="text-lg font-bold leading-none my-0.5" x-text="date.getDate()"></span>
+                            <span class="text-[8px]" x-show="date.toDateString() === new Date().toDateString()">HOY</span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end pt-4 border-t border-gray-700">
+                <x-secondary-button @click="$dispatch('close')" class="bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600">
+                    {{ __('Cerrar') }}
+                </x-secondary-button>
+            </div>
+        </div>
+    </x-modal>
 </x-app-layout>

@@ -127,6 +127,31 @@ class Vehicle extends Model
             ->first();
     }
 
+    /**
+     * Obtiene la reserva efectiva (activa o próxima) que justifica el estado 'ocupado'.
+     */
+    public function getEffectiveReservationAttribute()
+    {
+        // 1. Intentar obtener la activa real
+        $active = $this->getActiveReservationAttribute();
+        if ($active) {
+            return $active;
+        }
+
+        // 2. Si no hay activa pero el vehículo está marcado como ocupado,
+        // buscar la próxima reserva aprobada (aunque empiece en el futuro).
+        if ($this->status === 'occupied') {
+            return $this->reservations()
+                ->where('status', 'approved')
+                ->where('end_date', '>=', now()->startOfDay()) // Que no haya terminado ayer
+                ->with('user')
+                ->orderBy('start_date', 'asc')
+                ->first();
+        }
+
+        return null;
+    }
+
 
     public function currentMaintenanceState()
     {

@@ -11,20 +11,28 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-2xl p-6 mb-12 border border-gray-700">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 divide-x-0 md:divide-x divide-gray-700">
                     <div class="text-center px-4">
-                        <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Disponibles</span>
-                        <span class="block text-4xl font-black text-emerald-500">{{ $countDisponible }}</span>
+                        <a href="{{ route('vehicles.index', ['status' => 'available']) }}" class="block group hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg p-2 transition duration-200">
+                            <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 group-hover:text-gray-700 dark:group-hover:text-gray-300">Disponibles</span>
+                            <span class="block text-4xl font-black text-emerald-500 group-hover:scale-110 transition-transform duration-200">{{ $countDisponible }}</span>
+                        </a>
                     </div>
                     <div class="text-center px-4 border-l border-gray-700">
-                        <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Reservados</span>
-                        <span class="block text-4xl font-black text-blue-500">{{ $countAsignado }}</span>
+                        <a href="{{ route('vehicles.index', ['status' => 'occupied']) }}" class="block group hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg p-2 transition duration-200">
+                            <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 group-hover:text-gray-700 dark:group-hover:text-gray-300">Reservados</span>
+                            <span class="block text-4xl font-black text-blue-500 group-hover:scale-110 transition-transform duration-200">{{ $countAsignado }}</span>
+                        </a>
                     </div>
                     <div class="text-center px-4 border-l border-gray-700">
-                        <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Fuera de Servicio</span>
-                        <span class="block text-4xl font-black text-red-500">{{ $countFueraDeServicio }}</span>
+                        <a href="{{ route('vehicles.index', ['status' => 'out_of_service']) }}" class="block group hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg p-2 transition duration-200">
+                            <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 group-hover:text-gray-700 dark:group-hover:text-gray-300">Fuera de Servicio</span>
+                            <span class="block text-4xl font-black text-red-500 group-hover:scale-110 transition-transform duration-200">{{ $countFueraDeServicio }}</span>
+                        </a>
                     </div>
                     <div class="text-center px-4 border-l border-gray-700">
-                        <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Mantenimiento</span>
-                        <span class="block text-4xl font-black text-amber-500">{{ $countMantenimiento }}</span>
+                        <a href="{{ route('vehicles.index', ['status' => 'maintenance']) }}" class="block group hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg p-2 transition duration-200">
+                            <span class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 group-hover:text-gray-700 dark:group-hover:text-gray-300">Mantenimiento</span>
+                            <span class="block text-4xl font-black text-amber-500 group-hover:scale-110 transition-transform duration-200">{{ $countMantenimiento }}</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -171,7 +179,14 @@
                             </template>
                         </div>
                     </div>
-                    <div class="mt-8 flex justify-end">
+                    <div class="mt-8 flex justify-end gap-3">
+                        <a :href="`{{ route('vehicles.index') }}?search=${viewingVehicle.plate}`" 
+                            class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition uppercase text-xs tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Ver Detalles Completos
+                        </a>
                         <button @click="openViewModal = false" class="px-8 py-2 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition uppercase text-xs tracking-widest">Cerrar</button>
                     </div>
                 </div>

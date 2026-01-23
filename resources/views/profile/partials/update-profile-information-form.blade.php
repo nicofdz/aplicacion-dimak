@@ -275,10 +275,18 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Name -->
                 <div>
-                    <x-input-label for="name" :value="__('Nombre')" />
+                    <x-input-label for="name" :value="__('Nombres')" />
                     <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required
-                        autofocus autocomplete="name" />
+                        autofocus autocomplete="given-name" />
                     <x-input-error class="mt-2" :messages="$errors->get('name')" />
+                </div>
+
+                <!-- Last Name -->
+                <div>
+                    <x-input-label for="last_name" :value="__('Apellidos')" />
+                    <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full" :value="old('last_name', $user->last_name)" required
+                        autocomplete="family-name" />
+                    <x-input-error class="mt-2" :messages="$errors->get('last_name')" />
                 </div>
 
                 <!-- RUT -->

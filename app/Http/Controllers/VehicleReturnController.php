@@ -7,19 +7,51 @@ use Illuminate\Http\Request;
 
 class VehicleReturnController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        $returns = VehicleReturn::with([
+        $query = VehicleReturn::with([
             'request.user',
-            'request.vehicle' => function ($query) {
-                $query->withTrashed();
+            'request.vehicle' => function ($q) {
+                $q->withTrashed();
+            },
+            'request.fuelLoads'
+        ]);
+
+        // Filtro por búsqueda (usuario o patente)
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->whereHas('request', function ($q) use ($searchTerm) {
+                $q->whereHas('user', function ($userQuery) use ($searchTerm) {
+                    $userQuery->where('name', 'LIKE', "%{$searchTerm}%");
+                })->orWhereHas('vehicle', function ($vehicleQuery) use ($searchTerm) {
+                    $vehicleQuery->where('plate', 'LIKE', "%{$searchTerm}%");
+                });
+            });
+        }
+
+        // Filtro por rango de fechas (día, mes, año)
+        if ($request->filled('filter_type') && $request->filled('filter_value')) {
+            $filterType = $request->filter_type;
+            $filterValue = $request->filter_value;
+
+            if ($filterType === 'day') {
+                $query->whereDate('created_at', $filterValue);
+            } elseif ($filterType === 'month') {
+                $query->whereYear('created_at', substr($filterValue, 0, 4))
+                    ->whereMonth('created_at', substr($filterValue, 5, 2));
+            } elseif ($filterType === 'year') {
+                $query->whereYear('created_at', $filterValue);
             }
-        ])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        }
+
+        // Filtro especial por ID de solicitud (para navegación desde historial de uso)
+        if ($request->filled('request_id')) {
+            $query->where('vehicle_request_id', $request->request_id);
+        }
+
+        $returns = $query->orderBy('created_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
 
         return view('admin.returns.index', compact('returns'));
     }

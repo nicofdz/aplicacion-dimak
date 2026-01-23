@@ -36,6 +36,34 @@ class VehicleController extends Controller
             $query->where('status', $request->input('status'));
         }
 
+        // Filtro de Estado Documentos
+        if ($request->filled('document_status')) {
+            if ($request->input('document_status') === 'expired') {
+                $query->whereHas('documents', function ($q) {
+                    $q->where('expires_at', '<', now()->startOfDay());
+                });
+            } elseif ($request->input('document_status') === 'up_to_date') {
+                $query->whereDoesntHave('documents', function ($q) {
+                    $q->where('expires_at', '<', now()->startOfDay());
+                });
+            }
+        }
+
+        // Filtro de Mantención
+        if ($request->filled('maintenance_status')) {
+            if ($request->input('maintenance_status') === 'needed') {
+                // Filtra vehículos que están a menos de 1000km del cambio o pasados
+                // Requiere join o whereHas con raw porque comparamos columnas de dos tablas
+                $query->whereHas('currentMaintenanceState', function ($q) {
+                    $q->whereColumn('next_oil_change_km', '<=', \DB::raw('vehicles.mileage + 1000'));
+                });
+            } elseif ($request->input('maintenance_status') === 'ok') {
+                $query->whereDoesntHave('currentMaintenanceState', function ($q) {
+                    $q->whereColumn('next_oil_change_km', '<=', \DB::raw('vehicles.mileage + 1000'));
+                });
+            }
+        }
+
         $vehicles = $query->get();
 
         // Estados

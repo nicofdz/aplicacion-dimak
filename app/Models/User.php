@@ -20,6 +20,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'last_name',
         'email',
         'password',
         'profile_photo_path',
@@ -64,5 +65,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function vehicleRequests()
     {
         return $this->hasMany(VehicleRequest::class);
+    }
+
+    public function getShortNameAttribute(): string
+    {
+        // Retorna "PrimerNombre PrimerApellido"
+        $firstName = explode(' ', $this->name)[0];
+        $firstLastName = explode(' ', $this->last_name ?? '')[0];
+
+        return trim("$firstName $firstLastName");
     }
 }
