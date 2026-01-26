@@ -77,6 +77,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/rooms/agenda', [RoomReservationController::class, 'agenda'])->name('rooms.agenda');
     Route::put('/room-reservations/{id}/cancel-admin', [RoomReservationController::class, 'cancelByAdmin'])->name('room-reservations.cancel_admin');
     Route::get('/rooms/{room}/availability', [App\Http\Controllers\RoomReservationController::class, 'availability'])->name('rooms.availability');
+    Route::get('/admin/rooms/report', [RoomReservationController::class, 'downloadMonthlyReport'])->name('rooms.report');
     // Historial de Reservas
     Route::get('/admin/rooms/history', [RoomReservationController::class, 'history'])->name('rooms.history');
 

@@ -12,6 +12,7 @@ use App\Notifications\NewReservationRequest;
 use App\Notifications\ReservationConfirmed;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\ReservationCancelled;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class RoomReservationController extends Controller
 {
@@ -236,5 +237,25 @@ class RoomReservationController extends Controller
         $reservation->user->notify(new ReservationCancelled($reservation, $request->reason));
 
         return redirect()->back()->with('success', 'Reserva cancelada y usuario notificado.');
+    }
+    public function downloadMonthlyReport()
+    {
+        $now = now();
+        
+        
+        $reservations = RoomReservation::with(['user', 'meetingRoom'])
+            ->whereMonth('start_time', $now->month)
+            ->whereYear('start_time', $now->year)
+            ->where('status', '!=', 'cancelled') 
+            ->orderBy('start_time', 'asc')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.monthly_occupancy', [
+            'reservations' => $reservations,
+            'month' => $now->locale('es')->monthName,
+            'year' => $now->year
+        ]);
+
+        return $pdf->download('informe_ocupacion_' . $now->format('m_Y') . '.pdf');
     }
 }

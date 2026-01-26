@@ -4,9 +4,17 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 {{ __('Historial de Reservas Aprobadas') }}
             </h2>
-            <a href="{{ route('rooms.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-bold hover:bg-gray-500 transition">
-                ← Volver a Salas
-            </a>
+            
+            <div class="flex space-x-2">
+                <a href="{{ route('rooms.report') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-bold hover:bg-indigo-500 transition shadow flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Informe Mensual
+                </a>
+
+                <a href="{{ route('rooms.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-bold hover:bg-gray-500 transition shadow">
+                    ← Volver a Salas
+                </a>
+            </div>
         </div>
     </x-slot>
 
@@ -69,7 +77,7 @@
                                             <td class="px-5 py-4 text-center">
 
                                                 @if($res->status === 'cancelled')
-                                                   
+                                                    
                                                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">
                                                         CANCELADA
                                                     </span>
