@@ -158,8 +158,15 @@
                     <a href="{{ route('rooms.history') }}"
                         class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
                         :class="{{ request()->routeIs('rooms.history') ? "'text-white bg-gray-800'" : "''" }}">
-                        Historial de Salas
+                        Historial de Reservas
                     </a>
+
+                    <a href="{{ route('rooms.agenda') }}"
+                        class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800 transition-colors"
+                        :class="{{ request()->routeIs('rooms.agenda') ? "'text-white bg-gray-800'" : "''" }}">
+                        Gestion de Reservas
+                    </a>
+
                 @endif
             </div>
         </div>
