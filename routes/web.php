@@ -120,6 +120,21 @@ Route::middleware('auth')->group(function () {
     Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::post('/notifications/mark-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAll');
 
+    // Gestión de Activos
+    Route::resource('assets', \App\Http\Controllers\AssetController::class)
+        ->names([
+            'index' => 'assets.index',
+            'create' => 'assets.create',
+            'store' => 'assets.store',
+            'show' => 'assets.show',
+            'edit' => 'assets.edit',
+            'update' => 'assets.update',
+            'destroy' => 'assets.destroy',
+        ]);
+
+    // Rutas extra para asignaciones y dashboard
+    Route::get('/mis-asignaciones', [\App\Http\Controllers\AssetController::class, 'myAssignments'])->name('assets.my_assignments');
+    Route::get('/activos-dashboard', [\App\Http\Controllers\AssetController::class, 'dashboard'])->name('assets.dashboard');
 
 });
 

@@ -7,7 +7,8 @@
 <aside x-data="{ 
         open: true, 
         vehicleMenu: {{ request()->routeIs('dashboard', 'vehicles.*', 'conductores.*', 'requests.*', 'admin.returns.*') ? 'true' : 'false' }}, 
-        roomMenu: {{ request()->routeIs('rooms.*', 'reservations.*') ? 'true' : 'false' }} 
+        roomMenu: {{ request()->routeIs('rooms.*', 'reservations.*') ? 'true' : 'false' }},
+        assetMenu: {{ request()->routeIs('assets.*') ? 'true' : 'false' }} 
     }" :class="{
         'w-64': open, 
         'w-20': !open,
@@ -160,9 +161,41 @@
                         Historial de Salas
                     </a>
                 @endif
+            </div>
+        </div>
 
+        <!-- Módulo Activos -->
+        <div>
+            <button
+                @click="if(!open) { open = true; setTimeout(() => assetMenu = true, 100); } else { assetMenu = !assetMenu; }"
+                class="w-full flex items-center px-2 py-2 text-gray-300 rounded-md hover:bg-gray-800 hover:text-white group focus:outline-none justify-between"
+                :class="{'justify-center': !open, 'bg-gray-800 text-white': assetMenu}">
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <span x-show="open" class="ml-3 whitespace-nowrap font-medium" x-transition:enter="delay-75">Control
+                        de Activos</span>
+                </div>
+                <svg x-show="open" class="w-4 h-4 transition-transform duration-200" :class="{'rotate-90': assetMenu}"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
 
+            <div x-show="open && assetMenu" x-collapse class="space-y-1 bg-gray-800/50 mt-1 rounded-md overflow-hidden">
+                <a href="{{ route('assets.index') }}"
+                    class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
+                    :class="{{ request()->routeIs('assets.*') ? "'text-white bg-gray-800'" : "''" }}">
+                    Inventario Activos
+                </a>
 
+                <a href="#"
+                    class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
+                    :class="{{ request()->routeIs('assets.my_assignments') ? "'text-white bg-gray-800'" : "''" }}">
+                    Mis Asignaciones
+                </a>
             </div>
         </div>
 
