@@ -2,50 +2,54 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssetAssignment extends Model
 {
-    use HasFactory, SoftDeletes;
-
     protected $fillable = [
-        'asset_id',
-        'user_id',
-        'assignment_details',
-        'assigned_at',
-        'due_date',
-        'returned_at',
-        'return_condition',
-        'return_comments',
-        'assigned_by',
-        'received_by',
+        'activo_id',
+        'usuario_id',
+        'worker_id',
+        'trabajador_nombre',
+        'trabajador_rut',
+        'trabajador_departamento',
+        'trabajador_cargo',
+        'fecha_entrega',
+        'fecha_estimada_devolucion',
+        'fecha_devolucion',
+        'estado_entrega',
+        'estado_devolucion',
+        'observaciones',
+        'comentarios_devolucion',
     ];
 
     protected $casts = [
-        'assigned_at' => 'datetime',
-        'due_date' => 'datetime',
-        'returned_at' => 'datetime',
+        'fecha_entrega' => 'datetime',
+        'fecha_estimada_devolucion' => 'datetime',
+        'fecha_devolucion' => 'datetime',
     ];
 
+    /**
+     * Relación con activo
+     */
     public function asset()
     {
-        return $this->belongsTo(Asset::class);
+        return $this->belongsTo(Asset::class, 'activo_id');
     }
 
+    /**
+     * Relación con usuario
+     */
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'usuario_id');
     }
 
-    public function assignedBy()
+    /**
+     * Relación con trabajador externo
+     */
+    public function worker()
     {
-        return $this->belongsTo(User::class, 'assigned_by');
-    }
-
-    public function receivedBy()
-    {
-        return $this->belongsTo(User::class, 'received_by');
+        return $this->belongsTo(Worker::class, 'worker_id');
     }
 }

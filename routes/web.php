@@ -123,20 +123,23 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/mark-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAll');
 
     // Gestión de Activos
-    Route::resource('assets', \App\Http\Controllers\AssetController::class)
-        ->names([
-            'index' => 'assets.index',
-            'create' => 'assets.create',
-            'store' => 'assets.store',
-            'show' => 'assets.show',
-            'edit' => 'assets.edit',
-            'update' => 'assets.update',
-            'destroy' => 'assets.destroy',
-        ]);
+    Route::get('/assets/trash', [\App\Http\Controllers\AssetController::class, 'trash'])->name('assets.trash');
+    Route::put('/assets/{id}/restore', [\App\Http\Controllers\AssetController::class, 'restore'])->name('assets.restore');
+    Route::delete('/assets/{id}/force-delete', [\App\Http\Controllers\AssetController::class, 'forceDelete'])->name('assets.force-delete');
+    Route::get('/assets/{id}/barcode', [\App\Http\Controllers\AssetController::class, 'downloadBarcode'])->name('assets.barcode');
+    Route::post('/assets/{id}/assign', [\App\Http\Controllers\AssetController::class, 'assign'])->name('assets.assign');
+    Route::put('/assets/{id}/cancel-assignment', [\App\Http\Controllers\AssetController::class, 'cancelAssignment'])->name('assets.cancel-assignment');
+    Route::put('/assets/{id}/assignment/update', [\App\Http\Controllers\AssetController::class, 'updateAssignment'])->name('assets.update-assignment');
+    Route::get('/assets/{id}/history', [\App\Http\Controllers\AssetController::class, 'history'])->name('assets.history');
+    Route::get('/assets/{id}/history/pdf', [\App\Http\Controllers\AssetController::class, 'downloadHistoryPdf'])->name('assets.history.pdf');
+    Route::resource('assets', \App\Http\Controllers\AssetController::class);
 
-    // Rutas extra para asignaciones y dashboard
-    Route::get('/mis-asignaciones', [\App\Http\Controllers\AssetController::class, 'myAssignments'])->name('assets.my_assignments');
-    Route::get('/activos-dashboard', [\App\Http\Controllers\AssetController::class, 'dashboard'])->name('assets.dashboard');
+    // Trabajadores Externos
+    Route::get('/workers/check-rut', [\App\Http\Controllers\WorkerController::class, 'checkRut'])->name('workers.check-rut');
+    Route::get('/workers/trash', [\App\Http\Controllers\WorkerController::class, 'trash'])->name('workers.trash');
+    Route::post('/workers/{id}/restore', [\App\Http\Controllers\WorkerController::class, 'restore'])->name('workers.restore');
+    Route::delete('/workers/{id}/force-delete', [\App\Http\Controllers\WorkerController::class, 'forceDelete'])->name('workers.force-delete');
+    Route::resource('workers', \App\Http\Controllers\WorkerController::class);
 
 });
 

@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssetCategory extends Model
 {
-    use HasFactory, SoftDeletes;
+    protected $fillable = [
+        'nombre',
+        'descripcion',
+    ];
 
-    protected $fillable = ['name', 'description'];
-
+    /**
+     * Obtiene los activos de esta categoría
+     */
     public function assets()
     {
-        return $this->hasMany(Asset::class);
+        return $this->hasMany(Asset::class, 'categoria_id');
     }
 }
