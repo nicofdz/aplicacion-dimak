@@ -60,26 +60,28 @@ Route::middleware('auth')->group(function () {
     Route::delete('/conductores/{conductor}', [ConductorController::class, 'destroy'])->name('conductores.destroy');
 
     // Gestión de Salas 
-    Route::get('rooms/trash', [MeetingRoomController::class, 'trash'])->name('rooms.trash');
-    Route::put('rooms/{id}/restore', [MeetingRoomController::class, 'restore'])->name('rooms.restore');
-    Route::delete('rooms/{id}/force-delete', [MeetingRoomController::class, 'forceDelete'])->name('rooms.force-delete');
-
-    Route::resource('rooms', MeetingRoomController::class);
-
     Route::get('/reservar-sala', [RoomReservationController::class, 'index'])->name('reservations.catalog');
     Route::post('/reservar-sala', [RoomReservationController::class, 'store'])->name('reservations.store');
-
     Route::get('/mis-reservas-salas', [RoomReservationController::class, 'myReservations'])->name('reservations.my_reservations');
     Route::put('/mis-reservas-salas/{id}/cancel', [RoomReservationController::class, 'cancel'])->name('reservations.cancel');
+    Route::get('/rooms/{room}/availability', [RoomReservationController::class, 'availability'])->name('rooms.availability');
+    //filtrado solo admin y supervisor
+    Route::middleware(['role:admin,supervisor'])->group(function () {
+        
+        Route::get('rooms/trash', [MeetingRoomController::class, 'trash'])->name('rooms.trash');
+        Route::put('rooms/{id}/restore', [MeetingRoomController::class, 'restore'])->name('rooms.restore');
+        Route::delete('rooms/{id}/force-delete', [MeetingRoomController::class, 'forceDelete'])->name('rooms.force-delete');
+        Route::resource('rooms', MeetingRoomController::class);
 
-    Route::put('/room-reservations/{id}/approve', [RoomReservationController::class, 'approve'])->name('room-reservations.approve');
-    Route::put('/room-reservations/{id}/reject', [RoomReservationController::class, 'reject'])->name('room-reservations.reject');
-    Route::get('/admin/rooms/agenda', [RoomReservationController::class, 'agenda'])->name('rooms.agenda');
-    Route::put('/room-reservations/{id}/cancel-admin', [RoomReservationController::class, 'cancelByAdmin'])->name('room-reservations.cancel_admin');
-    Route::get('/rooms/{room}/availability', [App\Http\Controllers\RoomReservationController::class, 'availability'])->name('rooms.availability');
-    Route::get('/admin/rooms/report', [RoomReservationController::class, 'downloadMonthlyReport'])->name('rooms.report');
-    // Historial de Reservas
-    Route::get('/admin/rooms/history', [RoomReservationController::class, 'history'])->name('rooms.history');
+        Route::put('/room-reservations/{id}/approve', [RoomReservationController::class, 'approve'])->name('room-reservations.approve');
+        Route::put('/room-reservations/{id}/reject', [RoomReservationController::class, 'reject'])->name('room-reservations.reject');
+        Route::put('/room-reservations/{id}/cancel-admin', [RoomReservationController::class, 'cancelByAdmin'])->name('room-reservations.cancel_admin');
+    
+        Route::get('/admin/rooms/agenda', [RoomReservationController::class, 'agenda'])->name('rooms.agenda');
+        
+        Route::get('/admin/rooms/history', [RoomReservationController::class, 'history'])->name('rooms.history');
+        Route::get('/admin/rooms/report', [RoomReservationController::class, 'downloadMonthlyReport'])->name('rooms.report');
+    });
 
     // Rutas de Mantenimiento
     Route::post('vehiculos/{vehicle}/maintenance/state', [MaintenanceController::class, 'updateState'])->name('vehicles.maintenance.state');

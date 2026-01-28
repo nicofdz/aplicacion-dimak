@@ -6,10 +6,11 @@
             </h2>
             
             <div class="flex space-x-2">
-                <a href="{{ route('rooms.report') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-bold hover:bg-indigo-500 transition shadow flex items-center">
+                <button @click="$dispatch('open-report-modal')" 
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-bold hover:bg-indigo-500 transition shadow flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Informe Mensual
-                </a>
+                    Generar Informe
+                </button>
 
                 <a href="{{ route('rooms.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-bold hover:bg-gray-500 transition shadow">
                     ← Volver a Salas
@@ -18,7 +19,12 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-12" x-data="{ 
+        openReportModal: false,
+        selectedMonth: {{ now()->month }},
+        selectedYear: {{ now()->year }}
+    }"
+    @open-report-modal.window="openReportModal = true"> 
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-gray-200 dark:border-gray-700">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
@@ -77,11 +83,9 @@
                                             <td class="px-5 py-4 text-center">
 
                                                 @if($res->status === 'cancelled')
-                                                    
                                                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">
                                                         CANCELADA
                                                     </span>
-
                                                 @elseif($res->end_time->isPast())
                                                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-700 text-gray-300 border border-gray-600">
                                                         FINALIZADA
@@ -106,5 +110,79 @@
                 </div>
             </div>
         </div>
+
+        <template x-teleport="body">
+            <div x-show="openReportModal" style="display: none;" class="fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true">
+                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    
+                    <div x-show="openReportModal" 
+                         x-transition.opacity
+                         class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" 
+                         @click="openReportModal = false"></div>
+
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+                    <div x-show="openReportModal" 
+                         x-transition.scale
+                         class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full border border-gray-200 dark:border-gray-700 relative z-50">
+                        
+                        <div class="bg-indigo-600 px-4 py-3 sm:px-6 flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-white flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                Periodo del Informe
+                            </h3>
+                            <button @click="openReportModal = false" class="text-indigo-200 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="px-6 py-6 bg-white dark:bg-gray-800">
+                            
+                            <form action="{{ route('rooms.report') }}" method="GET" target="_blank" @submit="setTimeout(() => openReportModal = false, 500)">
+                                
+                                <input type="hidden" name="month" x-model="selectedMonth">
+                                <input type="hidden" name="year" x-model="selectedYear">
+
+                                <div class="flex justify-between items-center mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                                    <button type="button" @click="selectedYear--" class="p-2 hover:bg-white dark:hover:bg-gray-600 rounded-md text-gray-600 dark:text-gray-300 transition">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                    </button>
+                                    
+                                    <span class="text-lg font-bold text-gray-800 dark:text-white" x-text="selectedYear"></span>
+                                    
+                                    <button type="button" @click="selectedYear++" class="p-2 hover:bg-white dark:hover:bg-gray-600 rounded-md text-gray-600 dark:text-gray-300 transition">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 mb-6">
+                                    @foreach(range(1, 12) as $m)
+                                        @php
+                                            $monthName = ucfirst(\Carbon\Carbon::create(null, $m, 1)->locale('es')->monthName);
+                                            $shortName = substr($monthName, 0, 3);
+                                        @endphp
+                                        <button type="button" 
+                                                @click="selectedMonth = {{ $m }}"
+                                                class="py-2 text-sm font-medium rounded-lg border transition duration-150 ease-in-out focus:outline-none"
+                                                :class="selectedMonth == {{ $m }} 
+                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
+                                                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'">
+                                            {{ $monthName }}
+                                        </button>
+                                    @endforeach
+                                </div>
+
+                                <button type="submit" class="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-lg px-4 py-3 bg-indigo-600 text-base font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition transform hover:scale-[1.02]">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    Descargar Informe
+                                </button>
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+        
     </div>
 </x-app-layout>
