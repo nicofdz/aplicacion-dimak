@@ -14,6 +14,15 @@
                     </svg>
                     {{ __('Papelera') }}
                 </a>
+                <a href="{{ route('assets.export-pdf', request()->all()) }}" target="_blank"
+                    class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 active:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150 h-9">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    {{ __('Exportar PDF') }}
+                </a>
                 <button x-data="" @click="$dispatch('open-modal', 'create-asset-modal')"
                     class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150 h-9">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +42,13 @@
             editAction: '',
             cancelAssignmentAction: '',
             updateAssignmentAction: '',
-            searchQuery: '{{ request('search', '') }}'
+            assignAction: '',
+            editAction: '',
+            cancelAssignmentAction: '',
+            updateAssignmentAction: '',
+            searchQuery: '{{ request('search', '') }}',
+            showFilters: false,
+            selectedWriteOffAsset: null
         }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -48,6 +63,37 @@
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                     </div>
+                </div>
+
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <!-- Botón de Filtros -->
+                    <button @click="showFilters = true"
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-bold text-sm transition-colors flex items-center gap-2 border border-gray-300 dark:border-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        {{ __('Filtros') }}
+                        @php
+                            $activeFiltersCount = collect([request('estado'), request('categoria')])->filter()->count();
+                        @endphp
+                        @if($activeFiltersCount > 0)
+                            <span
+                                class="bg-indigo-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{{ $activeFiltersCount }}</span>
+                        @endif
+                    </button>
+
+                    <template x-if="searchQuery || {{ $activeFiltersCount > 0 ? 'true' : 'false' }}">
+                        <a href="{{ route('assets.index') }}"
+                            class="px-3 py-2 text-gray-500 hover:text-red-500 transition-colors"
+                            title="Limpiar Filtros">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </a>
+                    </template>
                 </div>
             </div>
 
@@ -138,11 +184,76 @@
                                                     'maintenance' => 'MANTENIMIENTO',
                                                     'written_off' => 'DADO DE BAJA',
                                                 ];
+
+                                                // Verificar última asignación para alertas de estado
+                                                $lastAssignment = $asset->assignments->sortByDesc('created_at')->first();
+                                                $showWarning = false;
+                                                $warningMessage = '';
+                                                $warningClass = '';
+
+                                                if ($lastAssignment && $asset->estado !== 'assigned' && $asset->estado !== 'maintenance' && $asset->estado !== 'written_off') {
+                                                    // Solo mostramos advertencia si está disponible pero la última devolución fue mala
+
+                                                    if (in_array($lastAssignment->estado_devolucion, ['bad', 'damaged', 'regular'])) {
+                                                        // Verificar si ya se hizo mantención POSTERIOR a la devolución
+                                                        // Usamos fecha_devolucion. Si no existe (raro si tiene estado), usamos updated_at
+                                                        $returnDate = $lastAssignment->fecha_devolucion ?? $lastAssignment->updated_at;
+
+                                                        $hasRecentMaintenance = $asset->maintenances
+                                                            ->where('fecha_termino', '!=', null)
+                                                            ->filter(function ($maintenance) use ($returnDate) {
+                                                                $mDate = \Carbon\Carbon::parse($maintenance->fecha_termino)->startOfDay();
+                                                                $rDate = \Carbon\Carbon::parse($returnDate)->startOfDay();
+
+                                                                if ($mDate->gt($rDate)) {
+                                                                    return true;
+                                                                }
+
+                                                                if ($mDate->equalTo($rDate)) {
+                                                                    $mTimestamp = $maintenance->updated_at ?? $mDate->endOfDay();
+                                                                    $rTimestamp = \Carbon\Carbon::parse($returnDate);
+                                                                    return $mTimestamp->gt($rTimestamp);
+                                                                }
+
+                                                                return false;
+                                                            })
+                                                            ->count() > 0;
+
+                                                        if (!$hasRecentMaintenance) {
+                                                            if (in_array($lastAssignment->estado_devolucion, ['bad', 'damaged'])) {
+                                                                $showWarning = true;
+                                                                $warningMessage = $lastAssignment->estado_devolucion === 'damaged' ? 'DAÑADO' : 'MAL ESTADO';
+                                                                $warningClass = 'text-red-400 bg-red-900/20 border-red-800';
+                                                            } elseif ($lastAssignment->estado_devolucion === 'regular') {
+                                                                $showWarning = true;
+                                                                $warningMessage = 'REGULAR';
+                                                                $warningClass = 'text-yellow-400 bg-yellow-900/20 border-yellow-800';
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             @endphp
-                                            <span
-                                                class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md {{ $statusClasses[$asset->estado] ?? 'text-gray-400 bg-gray-800' }}">
-                                                {{ $statusLabel[$asset->estado] ?? strtoupper($asset->estado) }}
-                                            </span>
+                                            <div class="flex flex-col items-start gap-1">
+                                                <span
+                                                    class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-md {{ $statusClasses[$asset->estado] ?? 'text-gray-400 bg-gray-800' }}">
+                                                    {{ $statusLabel[$asset->estado] ?? strtoupper($asset->estado) }}
+                                                </span>
+
+                                                @if($showWarning)
+                                                    <span
+                                                        class="px-2 py-0.5 inline-flex text-[10px] font-bold rounded border {{ $warningClass }} animate-pulse">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                                                            </path>
+                                                        </svg>
+                                                        {{ $warningMessage }}
+                                                    </span>
+                                                @endif
+                                            </div>
+
                                             @if($asset->estado === 'assigned' && $asset->activeAssignment)
                                                 <div class="text-[10px] text-blue-300 mt-1">
                                                     @if($asset->activeAssignment->user)
@@ -216,14 +327,50 @@
                                                 $jsonAsset = json_encode($jsAsset);
                                             @endphp
                                             <div class="flex items-center space-x-4">
+                                                <!-- Resolver Alerta (Solo si hay advertencia) -->
+                                                @if($showWarning)
+                                                    <button
+                                                        @click="
+                                                                                                                                                                                    editingAsset = {{ $jsonAsset }};
+                                                                                                                                                                                    $dispatch('open-modal', 'resolve-issue-modal');
+                                                                                                                                                                                "
+                                                        class="text-orange-500 hover:text-orange-400 transition duration-150 animate-pulse"
+                                                        title="Gestionar Alerta">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                                                            </path>
+                                                        </svg>
+                                                    </button>
+                                                @endif
+
+                                                <!-- Finalizar Mantención (Solo si está en mantenimiento) -->
+                                                @if($asset->estado === 'maintenance')
+                                                    <button
+                                                        @click="
+                                                                                                                                                                                    editingAsset = {{ $jsonAsset }};
+                                                                                                                                                                                    $dispatch('open-modal', 'finish-maintenance-modal');
+                                                                                                                                                                                "
+                                                        class="text-green-500 hover:text-green-400 transition duration-150"
+                                                        title="Finalizar Mantención">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                        </svg>
+                                                    </button>
+                                                @endif
                                                 <!-- Asignar (Solo si está disponible) -->
                                                 @if($asset->estado === 'available')
                                                     <button
                                                         @click="
-                                                                                                                                                                                                                                                assignmentAsset = {{ $jsonAsset }};
-                                                                                                                                                                                                                                                assignAction = '{{ route('assets.assign', $asset->id) }}';
-                                                                                                                                                                                                                                                $dispatch('open-modal', 'assign-asset-modal');
-                                                                                                                                                                                                                                            "
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        assignmentAsset = {{ $jsonAsset }};
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        assignAction = '{{ route('assets.assign', $asset->id) }}';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        $dispatch('open-modal', 'assign-asset-modal');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    "
                                                         class="text-blue-500 hover:text-blue-400 transition duration-150"
                                                         title="Asignar Activo">
                                                         <svg class="w-5 h-5" fill="none" stroke="currentColor"
@@ -252,9 +399,9 @@
                                                 @if($asset->estado === 'assigned')
                                                     <button
                                                         @click="
-                                                                                                                                                                                        assignmentAsset = {{ $jsonAsset }};
-                                                                                                                                                                                        $dispatch('open-modal', 'view-assignment-modal');
-                                                                                                                                                                                    "
+                                                                                                                                                                                                                                                                                                                                                                                                assignmentAsset = {{ $jsonAsset }};
+                                                                                                                                                                                                                                                                                                                                                                                                $dispatch('open-modal', 'view-assignment-modal');
+                                                                                                                                                                                                                                                                                                                                                                                            "
                                                         class="text-indigo-400 hover:text-indigo-300 transition duration-150"
                                                         title="Ver Detalles de Asignación">
                                                         <svg class="w-5 h-5" fill="none" stroke="currentColor"
@@ -293,9 +440,9 @@
                                                 <!-- Ver Detalle -->
                                                 <button
                                                     @click="
-                                                                                                                                                        editingAsset = {{ $jsonAsset }};
-                                                                                                                                                        $dispatch('open-modal', 'view-asset-modal');
-                                                                                                                                                    "
+                                                                                                                                                                                                                                                            editingAsset = {{ $jsonAsset }};
+                                                                                                                                                                                                                                                            $dispatch('open-modal', 'view-asset-modal');
+                                                                                                                                                                                                                                                        "
                                                     class="text-green-500 hover:text-green-400 transition duration-150"
                                                     title="Ver Detalle">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor"
@@ -311,10 +458,10 @@
                                                 <!-- Editar -->
                                                 <button
                                                     @click="
-                                                                                                                                                        editingAsset = {{ $jsonAsset }};
-                                                                                                                                                        editAction = '{{ route('assets.update', $asset->id) }}';
-                                                                                                                                                        $dispatch('open-modal', 'edit-asset-modal');
-                                                                                                                                                    "
+                                                                                                                                                                                                                                                            editingAsset = {{ $jsonAsset }};
+                                                                                                                                                                                                                                                            editAction = '{{ route('assets.update', $asset->id) }}';
+                                                                                                                                                                                                                                                            $dispatch('open-modal', 'edit-asset-modal');
+                                                                                                                                                                                                                                                        "
                                                     class="text-blue-400 hover:text-blue-300 transition duration-150"
                                                     title="Editar">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor"
@@ -327,9 +474,39 @@
                                                 </button>
 
                                                 <!-- Eliminar -->
+                                                @if ($asset->estado !== 'written_off')
+                                                    <!-- Botón Dar de Baja -->
+                                                    <button @click="openResolutionModal(asset, 'write_off')"
+                                                        class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 hover:text-red-300 transition-colors flex items-center gap-2">
+                                                        <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                        </svg>
+                                                        Dar de Baja
+                                                    </button>
+                                                @endif
+
+                                                @if ($asset->estado === 'written_off')
+                                                    <!-- Ver Detalle Baja -->
+                                                    <button
+                                                        @click="selectedWriteOffAsset = {{ Js::from($asset) }}; $dispatch('open-modal', 'write-off-details-modal');"
+                                                        class="text-red-500 hover:text-red-400 transition duration-150"
+                                                        title="Ver Detalle Baja">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </button>
+                                                @endif
+
+                                                <!-- Eliminar -->
                                                 <button
-                                                    @click="$dispatch('open-modal', 'confirm-delete-modal'); deleteAction = '{{ route('assets.destroy', $asset) }}'"
-                                                    class="text-red-400 hover:text-red-300 transition duration-150"
+                                                    @click="deleteAction = '{{ route('assets.destroy', $asset->id) }}'; $dispatch('open-modal', 'confirm-asset-deletion');"
+                                                    class="text-gray-400 hover:text-red-500 transition duration-150"
                                                     title="Eliminar">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor"
                                                         viewBox="0 0 24 24">
@@ -353,6 +530,129 @@
                         </table>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Sidebar de Filtros (Premium Design) -->
+        <div x-show="showFilters" class="fixed inset-0 z-50 flex justify-end" style="display: none;">
+            <!-- Backdrop -->
+            <div @click="showFilters = false" x-show="showFilters" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+            <!-- Sidebar Content -->
+            <div x-show="showFilters" x-transition:enter="transition transform ease-out duration-300"
+                x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+                x-transition:leave="transition transform ease-in duration-300" x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="translate-x-full"
+                class="relative w-80 bg-white dark:bg-gray-800 h-full shadow-2xl p-6 overflow-y-auto border-l border-gray-700">
+
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
+                            </path>
+                        </svg>
+                        Filtros
+                    </h3>
+                    <button @click="showFilters = false" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <form method="GET" action="{{ route('assets.index') }}">
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+
+                    <!-- Filter: Status -->
+                    <div class="mb-4 border-b border-gray-700 pb-4" x-data="{ open: true }">
+                        <button type="button" @click="open = !open"
+                            class="flex items-center justify-between w-full text-left text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 focus:outline-none">
+                            <span>Estado</span>
+                            <svg class="w-4 h-4 transition-transform duration-200" :class="{'rotate-180': open}"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div x-show="open" class="space-y-2 mt-2">
+                            <label
+                                class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('estado') === 'available' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                <input type="radio" name="estado" value="available" class="hidden" {{ request('estado') === 'available' ? 'checked' : '' }} onchange="this.form.submit()">
+                                <span
+                                    class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
+                                <span class="text-gray-200">Disponible</span>
+                            </label>
+                            <label
+                                class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('estado') === 'assigned' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                <input type="radio" name="estado" value="assigned" class="hidden" {{ request('estado') === 'assigned' ? 'checked' : '' }} onchange="this.form.submit()">
+                                <span
+                                    class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
+                                <span class="text-gray-200">Asignado</span>
+                            </label>
+                            <label
+                                class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('estado') === 'maintenance' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                <input type="radio" name="estado" value="maintenance" class="hidden" {{ request('estado') === 'maintenance' ? 'checked' : '' }} onchange="this.form.submit()">
+                                <span
+                                    class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"></span>
+                                <span class="text-gray-200">En Mantenimiento</span>
+                            </label>
+                            <label
+                                class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('estado') === 'written_off' ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                <input type="radio" name="estado" value="written_off" class="hidden" {{ request('estado') === 'written_off' ? 'checked' : '' }} onchange="this.form.submit()">
+                                <span
+                                    class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
+                                <span class="text-gray-200">Dado de Baja</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Filter: Category -->
+                    <div class="mb-4 border-b border-gray-700 pb-4 border-none" x-data="{ open: true }">
+                        <button type="button" @click="open = !open"
+                            class="flex items-center justify-between w-full text-left text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 focus:outline-none">
+                            <span>Categoría</span>
+                            <svg class="w-4 h-4 transition-transform duration-200" :class="{'rotate-180': open}"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div x-show="open"
+                            class="space-y-2 mt-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+                            <label
+                                class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('categoria') === null ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                <input type="radio" name="categoria" value="" class="hidden" {{ request('categoria') === null ? 'checked' : '' }} onchange="this.form.submit()">
+                                <span class="text-gray-200 font-medium">Todas</span>
+                            </label>
+                            @foreach($categories as $category)
+                                <label
+                                    class="flex items-center space-x-3 p-3 rounded-lg border border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors {{ request('categoria') == $category->id ? 'bg-indigo-900/30 border-indigo-500' : '' }}">
+                                    <input type="radio" name="categoria" value="{{ $category->id }}" class="hidden" {{ request('categoria') == $category->id ? 'checked' : '' }}
+                                        onchange="this.form.submit()">
+                                    <span class="text-gray-200">{{ $category->nombre }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-700 flex flex-col gap-3">
+                        <button type="submit"
+                            class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/30">
+                            Aplicar Filtros
+                        </button>
+                        @if(request('estado') || request('categoria'))
+                            <a href="{{ route('assets.index', ['search' => request('search')]) }}"
+                                class="w-full py-3 text-center text-gray-400 hover:text-white font-medium hover:bg-gray-700 rounded-lg transition-colors">
+                                Limpiar Filtros
+                            </a>
+                        @endif
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -1342,6 +1642,263 @@
             </div>
         </div>
     </x-modal>
+    <!-- Modal Resolver Alerta -->
+    <x-modal name="resolve-issue-modal" focusable>
+        <div class="p-6 bg-gray-800 text-gray-100" x-data="{ resolutionType: 'maintenance' }">
+            <h2 class="text-lg font-medium text-orange-500 mb-4 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                    </path>
+                </svg>
+                {{ __('Gestionar Alerta de Activo') }}
+            </h2>
+
+            <p class="mb-4 text-sm text-gray-400">
+                El activo <span class="font-bold text-white" x-text="editingAsset.nombre"></span> fue reportado con
+                problemas en su última devolución.
+                ¿Qué acción deseas tomar?
+            </p>
+
+            <div class="mb-6 flex space-x-4">
+                <label
+                    class="flex items-center p-3 rounded-lg border border-gray-700 cursor-pointer hover:bg-gray-700/50 transition-colors w-1/2"
+                    :class="{'bg-indigo-900/30 border-indigo-500': resolutionType === 'maintenance'}">
+                    <input type="radio" name="resolution_type" value="maintenance" x-model="resolutionType"
+                        class="hidden">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 rounded-full border border-gray-400 mr-3 flex items-center justify-center p-0.5"
+                            :class="{'border-indigo-500': resolutionType === 'maintenance'}">
+                            <div class="w-full h-full rounded-full bg-indigo-500"
+                                x-show="resolutionType === 'maintenance'"></div>
+                        </div>
+                        <div>
+                            <span class="block font-bold text-white">Enviar a Mantención</span>
+                            <span class="text-xs text-gray-400">Reparación o revisión técnica</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label
+                    class="flex items-center p-3 rounded-lg border border-gray-700 cursor-pointer hover:bg-gray-700/50 transition-colors w-1/2"
+                    :class="{'bg-red-900/30 border-red-500': resolutionType === 'write_off'}">
+                    <input type="radio" name="resolution_type" value="write_off" x-model="resolutionType"
+                        class="hidden">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 rounded-full border border-gray-400 mr-3 flex items-center justify-center p-0.5"
+                            :class="{'border-red-500': resolutionType === 'write_off'}">
+                            <div class="w-full h-full rounded-full bg-red-500" x-show="resolutionType === 'write_off'">
+                            </div>
+                        </div>
+                        <div>
+                            <span class="block font-bold text-white">Dar de Baja</span>
+                            <span class="text-xs text-gray-400">Retirar del inventario</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Formulario Mantención -->
+            <div x-show="resolutionType === 'maintenance'" x-transition>
+                <form method="POST" :action="`{{ url('/assets') }}/${editingAsset.id}/maintenance`">
+                    @csrf
+
+                    <div class="mb-4">
+                        <x-input-label for="fecha_mantencion" :value="__('Fecha de Mantención')"
+                            class="text-gray-300" />
+                        <input id="fecha_mantencion" type="date" name="fecha_mantencion"
+                            class="mt-1 block w-full bg-gray-900 border-gray-700 text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            value="{{ date('Y-m-d') }}" required />
+                    </div>
+
+                    <div class="mb-4">
+                        <x-input-label for="motivo_mantencion" :value="__('Motivo / Descripción del Daño')"
+                            class="text-gray-300" />
+                        <textarea id="motivo_mantencion" name="motivo_mantencion" rows="3"
+                            class="mt-1 block w-full bg-gray-900 border-gray-700 text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            required placeholder="Detallar el daño reportado y lo que se reparará..."></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <x-secondary-button @click="$dispatch('close')">
+                            {{ __('Cancelar') }}
+                        </x-secondary-button>
+
+                        <x-primary-button class="bg-indigo-600 hover:bg-indigo-500">
+                            {{ __('Confirmar Envío a Mantención') }}
+                        </x-primary-button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Formulario Dar de Baja -->
+            <div x-show="resolutionType === 'write_off'" x-transition>
+                <form method="POST" :action="`{{ url('/assets') }}/${editingAsset.id}/write-off`">
+                    @csrf
+
+                    <div class="mb-4">
+                        <x-input-label for="baja_fecha" :value="__('Fecha de Baja')" class="text-gray-300" />
+                        <input id="baja_fecha" type="date" name="fecha"
+                            class="mt-1 block w-full bg-gray-900 border-gray-700 text-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"
+                            value="{{ date('Y-m-d') }}" required />
+                    </div>
+
+                    <div class="mb-4">
+                        <x-input-label for="baja_motivo" :value="__('Motivo de la Baja')" class="text-gray-300" />
+                        <textarea id="baja_motivo" name="motivo" rows="3"
+                            class="mt-1 block w-full bg-gray-900 border-gray-700 text-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"
+                            required placeholder="Explique por qué se da de baja..."></textarea>
+                    </div>
+
+                    <div class="p-4 bg-red-900/20 border border-red-800 rounded-lg mb-4">
+                        <p class="text-red-300 text-sm">
+                            <strong class="block mb-1">⚠️ Acción Irreversible</strong>
+                            El activo cambiará a estado "Dado de Baja". Permanecerá en el sistema pero no podrá ser
+                            asignado nuevamente.
+                        </p>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <x-secondary-button @click="$dispatch('close')">
+                            {{ __('Cancelar') }}
+                        </x-secondary-button>
+
+                        <x-danger-button class="bg-red-600 hover:bg-red-500">
+                            {{ __('Confirmar Baja Definitiva') }}
+                        </x-danger-button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </x-modal>
+
+    <!-- Modal Finalizar Mantención -->
+    <x-modal name="finish-maintenance-modal" focusable>
+        <div class="p-6 bg-gray-800 text-gray-100">
+            <h2 class="text-lg font-medium text-green-500 mb-4 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {{ __('Finalizar Mantención') }}
+            </h2>
+
+            <p class="mb-4 text-sm text-gray-400">
+                Registra los detalles de la solución para el activo <span class="font-bold text-white"
+                    x-text="editingAsset.nombre"></span>.
+                Al finalizar, el activo volverá a estar <strong>DISPONIBLE</strong>.
+            </p>
+
+            <form method="POST" :action="`{{ url('/assets') }}/${editingAsset.id}/maintenance/finish`">
+                @csrf
+
+                <div class="mb-4">
+                    <x-input-label for="fecha_termino" :value="__('Fecha de Término')" class="text-gray-300" />
+                    <input id="fecha_termino" type="date" name="fecha_termino"
+                        class="mt-1 block w-full bg-gray-900 border-gray-700 text-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500"
+                        value="{{ date('Y-m-d') }}" required />
+                </div>
+
+                <div class="mb-4">
+                    <x-input-label for="detalles_solucion" :value="__('Detalles de la Solución')"
+                        class="text-gray-300" />
+                    <textarea id="detalles_solucion" name="detalles_solucion" rows="3"
+                        class="mt-1 block w-full bg-gray-900 border-gray-700 text-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500"
+                        required placeholder="Describe qué reparaciones se realizaron..."></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <x-input-label for="costo" :value="__('Costo Total (Opcional)')" class="text-gray-300" />
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500">$</span>
+                        </div>
+                        <input id="costo" type="number" name="costo" min="0" placeholder="0"
+                            class="mt-1 block w-full bg-gray-900 border-gray-700 text-gray-300 pl-7 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500" />
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6">
+                    <x-secondary-button @click="$dispatch('close')">
+                        {{ __('Cancelar') }}
+                    </x-secondary-button>
+
+                    <x-primary-button class="bg-green-600 hover:bg-green-500">
+                        {{ __('Finalizar y Habilitar') }}
+                    </x-primary-button>
+                </div>
+            </form>
+        </div>
+    </x-modal>
+
+    <!-- Modal Detalle Baja -->
+    <x-modal name="write-off-details-modal" focusable>
+        <div class="p-6 bg-gray-800 text-gray-100" x-data="{ assetWithDetails: {} }"
+            x-effect="if(show) { assetWithDetails = selectedWriteOffAsset; }">
+
+            <h2 class="text-lg font-medium text-gray-100 mb-4 flex items-center gap-2">
+                <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {{ __('Detalle de Baja de Activo') }}
+            </h2>
+
+            <div class="mb-6 bg-red-900/10 border border-red-800/50 rounded-lg p-4">
+                <p class="text-gray-300 text-sm mb-2">Activo:</p>
+                <p class="text-xl font-bold text-white mb-1" x-text="assetWithDetails?.nombre || 'Cargando...'"></p>
+                <p class="text-gray-400 font-mono text-sm" x-text="assetWithDetails?.codigo_interno || ''"></p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 uppercase">Fecha de Baja</label>
+                    <p class="mt-1 text-lg text-white"
+                        x-text="assetWithDetails?.write_off?.fecha ? new Date(assetWithDetails.write_off.fecha).toLocaleDateString() : 'N/A'">
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 uppercase">Motivo</label>
+                    <div class="mt-1 p-3 bg-gray-900 rounded-md border border-gray-700 text-gray-200 min-h-[80px]">
+                        <p x-text="assetWithDetails?.write_off?.motivo || 'Sin motivo registrado'"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <x-secondary-button @click="$dispatch('close')" class="bg-gray-700 hover:bg-gray-600 text-white">
+                    {{ __('Cerrar') }}
+                </x-secondary-button>
+            </div>
+        </div>
+    </x-modal>
+
+    <!-- Modal Confirmación Eliminar -->
+    <x-modal name="confirm-asset-deletion" focusable>
+        <form method="post" :action="deleteAction" class="p-6">
+            @csrf
+            @method('delete')
+
+            <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                {{ __('¿Estás seguro de que quieres eliminar este activo?') }}
+            </h2>
+
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                {{ __('Una vez eliminado, el activo se moverá a la papelera. Podrás restaurarlo después si es necesario.') }}
+            </p>
+
+            <div class="mt-6 flex justify-end">
+                <x-secondary-button x-on:click="$dispatch('close')">
+                    {{ __('Cancelar') }}
+                </x-secondary-button>
+
+                <x-danger-button class="ml-3">
+                    {{ __('Eliminar Activo') }}
+                </x-danger-button>
+            </div>
+        </form>
+    </x-modal>
     </div>
 </x-app-layout>
 
@@ -1417,6 +1974,7 @@
                     }
                 })
                 .catch(error => console.error('Error validando RUT:', error));
+
         }
     });
 </script>

@@ -1,0 +1,26 @@
+$asset = \App\Models\Asset::where('codigo_interno', 'ACT-0001')->first();
+if (!$asset) { echo "Asset not found\n"; }
+else {
+    $lastAssignment = $asset->assignments->sortByDesc('created_at')->first();
+    if (!$lastAssignment) { echo "No assignments\n"; }
+    else {
+        echo "Last Assignment ID: " . $lastAssignment->id . "\n";
+        echo "Created At: " . $lastAssignment->created_at . "\n";
+        echo "Estado Devolucion: " . $lastAssignment->estado_devolucion . "\n";
+        echo "Fecha Devolucion: " . $lastAssignment->fecha_devolucion . "\n";
+        echo "Is Damaged? " . (in_array($lastAssignment->estado_devolucion, ['bad', 'damaged', 'regular']) ? 'YES' : 'NO') . "\n";
+        
+        $returnDate = $lastAssignment->fecha_devolucion ?? $lastAssignment->updated_at;
+        $rDate = \Carbon\Carbon::parse($returnDate);
+        
+        $hasRecentMaintenance = $asset->maintenances
+            ->where('fecha_termino', '!=', null)
+            ->filter(function ($maintenance) use ($rDate) {
+                $mDate = \Carbon\Carbon::parse($maintenance->fecha_termino);
+                return $mDate->gte($rDate->startOfDay());
+            })->count() > 0;
+            
+        echo "Has Recent Maintenance? " . ($hasRecentMaintenance ? 'YES' : 'NO') . "\n";
+    }
+}
+exit();

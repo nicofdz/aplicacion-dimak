@@ -15,11 +15,53 @@ use Picqer\Barcode\BarcodeGeneratorPNG;
 class AssetController extends Controller
 {
     /**
+     * Display the dashboard.
+     */
+    public function dashboard(Request $request)
+    {
+        $query = Asset::with(['category', 'assignments.user', 'assignments.worker', 'maintenances', 'writeOff']);
+
+        // Filtro de Búsqueda
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('codigo_interno', 'like', "%{$search}%")
+                    ->orWhere('nombre', 'like', "%{$search}%")
+                    ->orWhere('marca', 'like', "%{$search}%")
+                    ->orWhere('modelo', 'like', "%{$search}%")
+                    ->orWhere('codigo_barra', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtro de Estado
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->input('estado'));
+        }
+
+        // Filtro de Categoría
+        if ($request->filled('categoria')) {
+            $query->where('categoria_id', $request->input('categoria'));
+        }
+
+        $assets = $query->orderBy('created_at', 'desc')->get();
+
+        // Conteos para tarjetas
+        $countDisponible = Asset::where('estado', 'available')->count();
+        $countAsignado = Asset::where('estado', 'assigned')->count();
+        $countMantenimiento = Asset::where('estado', 'maintenance')->count();
+        $countBaja = Asset::where('estado', 'written_off')->count();
+
+        $categories = AssetCategory::all();
+
+        return view('assets.dashboard', compact('assets', 'countDisponible', 'countAsignado', 'countMantenimiento', 'countBaja', 'categories'));
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = Asset::with(['category', 'assignments.user', 'assignments.worker']);
+        $query = Asset::with(['category', 'assignments.user', 'assignments.worker', 'maintenances', 'writeOff']);
 
         // Filtro de Búsqueda
         if ($request->filled('search')) {
@@ -49,6 +91,47 @@ class AssetController extends Controller
         $workers = Worker::orderBy('nombre')->get(); // Para el modal de asignación
 
         return view('assets.index', compact('assets', 'categories', 'users', 'workers'));
+    }
+
+    /**
+     * Exporta el inventario a PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $query = Asset::with(['category', 'assignments.user', 'assignments.worker', 'maintenances', 'writeOff']);
+
+        // Filtro de Búsqueda
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('codigo_interno', 'like', "%{$search}%")
+                    ->orWhere('nombre', 'like', "%{$search}%")
+                    ->orWhere('marca', 'like', "%{$search}%")
+                    ->orWhere('modelo', 'like', "%{$search}%")
+                    ->orWhere('codigo_barra', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtro de Estado
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->input('estado'));
+        }
+
+        // Filtro de Categoría
+        if ($request->filled('categoria')) {
+            $query->where('categoria_id', $request->input('categoria'));
+        }
+
+        // Obtener TODOS los registros (sin paginación)
+        $assets = $query->orderBy('created_at', 'desc')->get();
+        $generatedDate = now()->format('d/m/Y H:i');
+
+        $pdf = Pdf::loadView('assets.pdf.inventory', compact('assets', 'generatedDate'));
+
+        // Orientación horizontal para que quepan más columnas
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('inventario_activos_' . now()->format('dmY') . '.pdf');
     }
 
     /**
@@ -325,43 +408,172 @@ class AssetController extends Controller
     {
         $asset = Asset::withTrashed()->findOrFail($id);
 
-        $query = $asset->assignments()
+        // Query Assignments
+        $assignmentsQuery = $asset->assignments()
             ->with(['user', 'worker'])
             ->orderBy('created_at', 'desc');
 
+        // Query Maintenances
+        $maintenancesQuery = $asset->maintenances()
+            ->orderBy('fecha', 'desc');
+
         if ($request->filled('start_date')) {
-            $query->whereDate('fecha_entrega', '>=', $request->start_date);
+            $assignmentsQuery->whereDate('fecha_entrega', '>=', $request->start_date);
+            $maintenancesQuery->whereDate('fecha', '>=', $request->start_date);
         }
 
         if ($request->filled('end_date')) {
-            $query->whereDate('fecha_entrega', '<=', $request->end_date);
+            $assignmentsQuery->whereDate('fecha_entrega', '<=', $request->end_date);
+            $maintenancesQuery->whereDate('fecha', '<=', $request->end_date);
         }
 
-        $assignments = $query->get();
+        $assignments = $assignmentsQuery->get();
+        $maintenances = $maintenancesQuery->get();
 
-        return view('assets.history', compact('asset', 'assignments'));
+        return view('assets.history', compact('asset', 'assignments', 'maintenances'));
     }
 
     public function downloadHistoryPdf(Request $request, $id)
     {
         $asset = Asset::withTrashed()->findOrFail($id);
 
-        $query = $asset->assignments()
-            ->with(['user', 'worker'])
-            ->orderBy('created_at', 'desc');
+        if ($request->query('type') === 'maintenances') {
+            // Logica para PDF de Mantenciones
+            $query = $asset->maintenances()->orderBy('fecha', 'desc');
 
-        if ($request->filled('start_date')) {
-            $query->whereDate('fecha_entrega', '>=', $request->start_date);
+            if ($request->filled('start_date')) {
+                $query->whereDate('fecha', '>=', $request->start_date);
+            }
+
+            if ($request->filled('end_date')) {
+                $query->whereDate('fecha', '<=', $request->end_date);
+            }
+
+            $maintenances = $query->get();
+            $pdf = Pdf::loadView('assets.history-maintenance-pdf', compact('asset', 'maintenances'));
+            $filename = 'historial-mantenciones-' . $asset->codigo_interno . '-' . now()->format('dmY-His') . '.pdf';
+
+        } else {
+            // Lógica por defecto (Asignaciones)
+            $query = $asset->assignments()
+                ->with(['user', 'worker'])
+                ->orderBy('created_at', 'desc');
+
+            if ($request->filled('start_date')) {
+                $query->whereDate('fecha_entrega', '>=', $request->start_date);
+            }
+
+            if ($request->filled('end_date')) {
+                $query->whereDate('fecha_entrega', '<=', $request->end_date);
+            }
+
+            $assignments = $query->get();
+            $pdf = Pdf::loadView('assets.history-pdf', compact('asset', 'assignments'));
+            $filename = 'historial-asignaciones-' . $asset->codigo_interno . '-' . now()->format('dmY-His') . '.pdf';
         }
 
-        if ($request->filled('end_date')) {
-            $query->whereDate('fecha_entrega', '<=', $request->end_date);
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Enviar activo a mantención desde alerta de daño
+     */
+    public function sendToMaintenance(Request $request, $id)
+    {
+        $asset = Asset::findOrFail($id);
+
+        $request->validate([
+            'fecha_mantencion' => 'required|date',
+            'motivo_mantencion' => 'required|string|max:255',
+        ]);
+
+        // Crear registro de mantención
+        \App\Models\AssetMaintenance::create([
+            'activo_id' => $asset->id,
+            'tipo' => 'correctiva', // Asumimos correctiva por defecto al venir de un daño
+            'descripcion' => $request->motivo_mantencion,
+            'fecha' => $request->fecha_mantencion,
+        ]);
+
+        // Actualizar estado del activo
+        $asset->update(['estado' => 'maintenance']);
+
+        return back()->with('success', 'Activo enviado a mantención correctamente.');
+    }
+
+    /**
+     * Dar de baja activo desde alerta de daño
+     */
+    public function writeOff(Request $request, $id)
+    {
+        \Illuminate\Support\Facades\Log::info("WriteOff Request initiated for ID: $id", $request->all());
+
+        $asset = Asset::findOrFail($id);
+
+        $request->validate([
+            'motivo' => 'required|string|max:1000',
+            'fecha' => 'required|date',
+        ]);
+
+        // Crear registro de baja
+        $writeOff = \App\Models\AssetWriteOff::create([
+            'asset_id' => $asset->id,
+            'user_id' => auth()->id(),
+            'motivo' => $request->motivo,
+            'fecha' => $request->fecha,
+        ]);
+
+        \Illuminate\Support\Facades\Log::info("WriteOff created for asset {$asset->id} (No evidence upload).");
+
+        // Actualizar estado del activo
+        $asset->update(['estado' => 'written_off']);
+
+        return back()->with('success', 'Activo dado de baja correctamente. Evidencia guardada.');
+    }
+
+    /**
+     * Finalizar mantención de un activo
+     */
+    public function finishMaintenance(Request $request, $id)
+    {
+        $asset = Asset::findOrFail($id);
+
+        $request->validate([
+            'fecha_termino' => 'required|date',
+            'detalles_solucion' => 'required|string',
+            'costo' => 'nullable|integer|min:0',
+        ]);
+
+        // Buscar el último registro de mantenimiento abierto (sin fecha de término)
+        // O simplemente el último creado si asumimos que es el activo
+        $maintenance = \App\Models\AssetMaintenance::where('activo_id', $asset->id)
+            ->whereNull('fecha_termino')
+            ->latest()
+            ->first();
+
+        if ($maintenance) {
+            $maintenance->update([
+                'fecha_termino' => $request->fecha_termino,
+                'detalles_solucion' => $request->detalles_solucion,
+                'costo' => $request->costo,
+            ]);
+        } else {
+            // Si no hay uno abierto, podemos optar por crear uno cerrado o simplemente ignorar la actualización del registro
+            // y solo cambiar el estado. Pero lo ideal es que siempre haya correspondencia.
+            // Para robustez, si no encuentra uno abierto, buscamos el ultimo creado.
+            $maintenance = \App\Models\AssetMaintenance::where('activo_id', $asset->id)->latest()->first();
+            if ($maintenance) {
+                $maintenance->update([
+                    'fecha_termino' => $request->fecha_termino,
+                    'detalles_solucion' => $request->detalles_solucion,
+                    'costo' => $maintenance->costo ?? $request->costo, // Mantiene costo si ya existía
+                ]);
+            }
         }
 
-        $assignments = $query->get();
+        // Actualizar estado del activo a disponible
+        $asset->update(['estado' => 'available']);
 
-        $pdf = Pdf::loadView('assets.history-pdf', compact('asset', 'assignments'));
-
-        return $pdf->download('historial-' . $asset->codigo_interno . '-' . now()->format('dmY-His') . '.pdf');
+        return back()->with('success', 'Mantención finalizada. Activo disponible nuevamente.');
     }
 }

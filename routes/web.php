@@ -123,6 +123,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/mark-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAll');
 
     // Gestión de Activos
+    Route::get('/assets/dashboard', [\App\Http\Controllers\AssetController::class, 'dashboard'])->name('assets.dashboard');
     Route::get('/assets/trash', [\App\Http\Controllers\AssetController::class, 'trash'])->name('assets.trash');
     Route::put('/assets/{id}/restore', [\App\Http\Controllers\AssetController::class, 'restore'])->name('assets.restore');
     Route::delete('/assets/{id}/force-delete', [\App\Http\Controllers\AssetController::class, 'forceDelete'])->name('assets.force-delete');
@@ -132,6 +133,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/assets/{id}/assignment/update', [\App\Http\Controllers\AssetController::class, 'updateAssignment'])->name('assets.update-assignment');
     Route::get('/assets/{id}/history', [\App\Http\Controllers\AssetController::class, 'history'])->name('assets.history');
     Route::get('/assets/{id}/history/pdf', [\App\Http\Controllers\AssetController::class, 'downloadHistoryPdf'])->name('assets.history.pdf');
+    Route::get('/assets/export-pdf', [\App\Http\Controllers\AssetController::class, 'exportPdf'])->name('assets.export-pdf');
+
+    // Rutas para resolver alertas de daños y mantenciones
+    Route::post('/assets/{id}/maintenance', [\App\Http\Controllers\AssetController::class, 'sendToMaintenance'])->name('assets.maintenance.send');
+    Route::post('/assets/{id}/maintenance/finish', [\App\Http\Controllers\AssetController::class, 'finishMaintenance'])->name('assets.maintenance.finish');
+    Route::post('/assets/{id}/write-off', [\App\Http\Controllers\AssetController::class, 'writeOff'])->name('assets.write-off');
+
     Route::resource('assets', \App\Http\Controllers\AssetController::class);
 
     // Trabajadores Externos

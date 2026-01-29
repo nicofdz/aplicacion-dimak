@@ -121,11 +121,11 @@
                     <td>
                         @if($assignment->fecha_devolucion)
                                         <span class="status-badge 
-                                                    @if($assignment->estado_devolucion == 'good') text-green
-                                                    @elseif($assignment->estado_devolucion == 'regular') text-yellow
-                                                    @elseif($assignment->estado_devolucion == 'bad') text-orange
-                                                    @elseif($assignment->estado_devolucion == 'damaged') text-red
-                                                    @else text-gray @endif">
+                                                                        @if($assignment->estado_devolucion == 'good') text-green
+                                                                        @elseif($assignment->estado_devolucion == 'regular') text-yellow
+                                                                        @elseif($assignment->estado_devolucion == 'bad') text-orange
+                                                                        @elseif($assignment->estado_devolucion == 'damaged') text-red
+                                                                        @else text-gray @endif">
                                             {{ match ($assignment->estado_devolucion) {
                                 'good' => 'Bueno',
                                 'regular' => 'Regular',

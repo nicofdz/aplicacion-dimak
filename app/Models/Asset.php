@@ -112,4 +112,11 @@ class Asset extends Model
             ->orderBy('fecha_entrega', 'desc')
             ->first();
     }
+    /**
+     * Relación con registro de baja
+     */
+    public function writeOff()
+    {
+        return $this->hasOne(AssetWriteOff::class, 'asset_id');
+    }
 }

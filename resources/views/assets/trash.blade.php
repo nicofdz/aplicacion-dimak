@@ -46,7 +46,7 @@
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($assets as $asset)
                             <tr
-                                class="opacity-75 hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 border-b border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                class="opacity-75 hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 border-b border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100">
                                 <td class="px-5 py-4 text-sm">
                                     @if($asset->foto_path)
                                         <div class="h-10 w-10 flex-shrink-0">

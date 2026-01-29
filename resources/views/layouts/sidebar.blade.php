@@ -192,9 +192,14 @@
             </button>
 
             <div x-show="open && assetMenu" x-collapse class="space-y-1 bg-gray-800/50 mt-1 rounded-md overflow-hidden">
+                <a href="{{ route('assets.dashboard') }}"
+                    class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
+                    :class="{{ request()->routeIs('assets.dashboard') ? "'text-white bg-gray-800'" : "''" }}">
+                    Dashboard
+                </a>
                 <a href="{{ route('assets.index') }}"
                     class="flex items-center pl-11 pr-2 py-2 text-sm text-gray-400 rounded-md hover:text-white hover:bg-gray-800"
-                    :class="{{ request()->routeIs('assets.*') ? "'text-white bg-gray-800'" : "''" }}">
+                    :class="{{ (request()->routeIs('assets.*') && !request()->routeIs('assets.dashboard')) ? "'text-white bg-gray-800'" : "''" }}">
                     Gestión de Activos
                 </a>
                 <a href="{{ route('workers.index') }}"

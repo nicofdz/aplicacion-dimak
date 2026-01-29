@@ -13,10 +13,13 @@ class AssetMaintenance extends Model
         'fecha',
         'costo',
         'evidencia_path',
+        'detalles_solucion',
+        'fecha_termino',
     ];
 
     protected $casts = [
         'fecha' => 'date',
+        'fecha_termino' => 'date',
     ];
 
     /**

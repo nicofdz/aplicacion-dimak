@@ -23,18 +23,18 @@
                         @endif
                     </button>
 
-                    <div x-show="notifyOpen" 
-                         @click.away="notifyOpen = false"
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="transform opacity-0 scale-95"
-                         x-transition:enter-end="transform opacity-100 scale-100"
-                         x-transition:leave="transition ease-in duration-75"
-                         x-transition:leave-start="transform opacity-100 scale-100"
-                         x-transition:leave-end="transform opacity-0 scale-95"
-                         class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50"
-                         style="display: none; width: 22rem;"> 
-                        
-                        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center sticky top-0 z-10">
+                    <div x-show="notifyOpen" @click.away="notifyOpen = false"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="transform opacity-0 scale-95"
+                        x-transition:enter-end="transform opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-75"
+                        x-transition:leave-start="transform opacity-100 scale-100"
+                        x-transition:leave-end="transform opacity-0 scale-95"
+                        class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50"
+                        style="display: none; width: 22rem;">
+
+                        <div
+                            class="px-4 py-3 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center sticky top-0 z-10">
 
                             <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Notificaciones
@@ -70,7 +70,7 @@
                                         <a href="{{ route('notifications.read', $notification->id) }}"
                                             class="block px-4 py-3 pr-10">
                                             <div class="flex items-start gap-3">
-                                                
+
                                                 <div class="flex-shrink-0 mt-1">
                                                     @if(isset($notification->data['type']) && $notification->data['type'] == 'danger')
                                                         <div class="w-2 h-2 rounded-full bg-red-500 mt-1.5"></div>
@@ -86,7 +86,7 @@
                                                         class="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug break-words">
                                                         {{ $notification->data['message'] }}
                                                     </p>
-                                                    
+
                                                     @if(isset($notification->data['reason']))
                                                         <p class="text-xs text-red-500 mt-1 italic break-words">
                                                             "{{ $notification->data['reason'] }}"
