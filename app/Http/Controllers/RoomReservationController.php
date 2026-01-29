@@ -238,24 +238,27 @@ class RoomReservationController extends Controller
 
         return redirect()->back()->with('success', 'Reserva cancelada y usuario notificado.');
     }
-    public function downloadMonthlyReport()
+    public function downloadMonthlyReport(\Illuminate\Http\Request $request)
     {
-        $now = now();
         
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
         
+        $dateObj = \Carbon\Carbon::createFromDate($year, $month, 1);
+
         $reservations = RoomReservation::with(['user', 'meetingRoom'])
-            ->whereMonth('start_time', $now->month)
-            ->whereYear('start_time', $now->year)
-            ->where('status', '!=', 'cancelled') 
+            ->whereMonth('start_time', $month)
+            ->whereYear('start_time', $year)
+            ->where('status', '!=', 'cancelled')
             ->orderBy('start_time', 'asc')
             ->get();
 
         $pdf = Pdf::loadView('pdf.monthly_occupancy', [
             'reservations' => $reservations,
-            'month' => $now->locale('es')->monthName,
-            'year' => $now->year
+            'month' => $dateObj->locale('es')->monthName,
+            'year' => $year
         ]);
 
-        return $pdf->download('informe_ocupacion_' . $now->format('m_Y') . '.pdf');
+        return $pdf->download('informe_ocupacion_' . $dateObj->format('m_Y') . '.pdf');
     }
 }

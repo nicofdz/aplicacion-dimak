@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\MeetingRoom;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage; 
+use Intervention\Image\Laravel\Facades\Image;
 
 class MeetingRoomController extends Controller
 {
-    
     public function index()
     {
         $rooms = MeetingRoom::all();
@@ -20,22 +20,30 @@ class MeetingRoomController extends Controller
         return view('rooms.index', compact('rooms', 'pendingReservations'));        
     }
 
-    
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
             'status' => 'required|in:active,maintenance',
-            'image' => 'nullable|image|max:2048', 
+            'image' => 'nullable|image|max:10240', 
         ]);
 
         $data = $request->all();
 
-        
+       
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('rooms', 'public');
-            $data['image_path'] = $path;
+            $file = $request->file('image');
+            
+            $filename = time() . '_' . uniqid() . '.webp';
+
+            $image = Image::read($file)
+                ->scale(width: 1000)
+                ->encodeByExtension('webp', quality: 80);
+
+            Storage::disk('public')->put('rooms/' . $filename, (string) $image);
+            
+            $data['image_path'] = 'rooms/' . $filename; 
         }
 
         MeetingRoom::create($data);
@@ -43,30 +51,41 @@ class MeetingRoomController extends Controller
         return redirect()->route('rooms.index')->with('success', 'Sala creada correctamente.');
     }
 
-    
     public function edit(MeetingRoom $room)
     {
         return view('rooms.edit', compact('room'));
     }
 
-    
     public function update(Request $request, MeetingRoom $room)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
             'status' => 'required|in:active,maintenance',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|max:10240',
         ]);
 
-        $data = $request->all();
+        $data = $request->except('image'); 
 
+     
         if ($request->hasFile('image')) {
             
-            if ($room->image_path) {
+           
+            if ($room->image_path && Storage::disk('public')->exists($room->image_path)) {
                 Storage::disk('public')->delete($room->image_path);
             }
-            $data['image_path'] = $request->file('image')->store('rooms', 'public');
+
+           
+            $file = $request->file('image');
+            $filename = time() . '_' . uniqid() . '.webp';
+
+            $image = Image::read($file)
+                ->scale(width: 1000)
+                ->encodeByExtension('webp', quality: 80);
+
+            Storage::disk('public')->put('rooms/' . $filename, (string) $image);
+            
+            $data['image_path'] = 'rooms/' . $filename;
         }
 
         $room->update($data);
@@ -74,23 +93,18 @@ class MeetingRoomController extends Controller
         return redirect()->route('rooms.index')->with('success', 'Sala actualizada.');
     }
 
-    
     public function destroy(MeetingRoom $room)
     {
-       
         $room->delete();
         return redirect()->route('rooms.index')->with('success', 'Sala movida a la papelera.');
-        
     }
 
     public function trash()
     {
-        
         $rooms = MeetingRoom::onlyTrashed()->get();
         return view('rooms.trash', compact('rooms'));
     }
 
-  
     public function restore($id)
     {
         $room = MeetingRoom::withTrashed()->findOrFail($id);
@@ -98,12 +112,10 @@ class MeetingRoomController extends Controller
         return redirect()->route('rooms.index')->with('success', 'Sala restaurada correctamente.');
     }
 
-   
     public function forceDelete($id)
     {
         $room = MeetingRoom::withTrashed()->findOrFail($id);
 
-     
         if ($room->image_path) {
             Storage::disk('public')->delete($room->image_path);
         }
@@ -111,6 +123,4 @@ class MeetingRoomController extends Controller
         $room->forceDelete(); 
         return redirect()->back()->with('success', 'Sala eliminada permanentemente.');
     }
-
-    
 }
